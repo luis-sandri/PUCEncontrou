@@ -1,14 +1,40 @@
-# Pendências e propostas sem aprovação
+# Pendências e propostas para revisão da equipe
 
-Nada nesta página é uma regra aprovada. O campo "responsáveis pela revisão"
-orienta a conversa; não registra decisão nem delegação já aceita pelos colegas.
-Registrar aqui a decisão real, data e participantes quando a equipe revisar.
+**Estado em 21/10/2026:** o solicitante selecionou alternativas para P01, P02, P03,
+P04, P05, P06 e P09. **Essas seleções não equivalem à aprovação coletiva.**
+Este documento registra o encaminhamento escolhido e as lacunas restantes,
+sem alterar as regras já aprovadas em [regras-negocio.md](regras-negocio.md).
+Não implementar como decisão final antes do alinhamento com a equipe.
+
+**Convenção:** "seleção do solicitante" = proposta a submeter à equipe;
+"aprovado anteriormente" = regra já consolidada; "a definir" = decisão
+ainda aberta. Responsáveis indicados são sugestões de revisão, não
+aceites individuais.
+
+## Resumo das seleções (aguardando alinhamento)
+
+| ID | Seleção informada | O que continua aberto |
+| --- | --- | --- |
+| P01 | **Revisar** campos e categorias do Figma | Todos os campos, categorias, anexos e exposição pública |
+| P02 | Indexar **data da perda/achado** na AVL | Datas ausentes/aproximadas, hora, critérios de intervalo e desempate |
+| P03 | Usar pesos e limiar apresentados como **configuração inicial de testes** | Normalização, evidência mínima, calibragem e aprovação para produção |
+| P04 | Preferir **exclusão física** | Efeitos em vínculos, fotos, índice, persistência e eventuais trilhas |
+| P05 | Preferir **vínculo 1:1, realizado por secretário** | Desvinculação, substituição, cancelamento/exclusão e integridade |
+| P06 | Preferir **justificativa obrigatória ao cancelar** | Motivos, apresentação, persistência e propagação em pares |
+| P09 | Administração com **cadastro, edição, desativação e redefinição de senha** | Identificação, recuperação, sessões, campos e política de segurança |
+
+Os itens P07, P08, P10, P11 e P12 permanecem pendências técnicas e de
+integração. O Figma é referência de comportamento da interface, **não**
+evidência de que o código funciona nem aprovação automática de regras.
 
 ## Propostas já apresentadas à equipe
 
 ### P01 — Campos, categorias e exposição
 
-Categorias propostas:
+**Seleção do solicitante:** **revisar campos e categorias**; nenhum
+conjunto definitivo foi aprovado por essa seleção.
+
+Categorias propostas anteriormente (continuam abertas):
 
 - Eletrônicos e acessórios
 - Materiais acadêmicos
@@ -19,74 +45,129 @@ Categorias propostas:
 - Bolsas e mochilas
 - Outros
 
-Faltam os campos obrigatórios/opcionais exatos, limites de tamanho, cor,
-descrição, identificação de bloco/local, contato e sua exposição pública,
-categoria única/múltipla e necessidade de anexos. Não incluir upload ou
-campos como requisito sem decisão. Os dois tipos de local já são distintos
-por regra aprovada, mas representação e obrigatoriedade não estão definidas.
+**Referência do Figma (não aprovada como contrato):** os formulários
+separam PERDIDO/ENCONTRADO, identificam campos com `*`, incluem nome,
+categoria, data, descrição e local da perda/achado. O achado também informa
+setor de guarda (inclusive a condição de ainda não entregue). Há foto
+opcional e indicação visual de limite de 1,5 MB. O cadastro deve ser
+curto, claro e funcionar sem conta pública.
 
-Bloqueia: modelo completo, formulários, DTOs, codec definitivo e matching.
-Revisão: equipe; Marcelo coordena modelo, Mariana interface, Matheus JSON.
+**Ainda a decidir:** lista final de categorias, categoria única/múltipla,
+campos mínimos de cada tipo, precisão/localização, data aproximada,
+contato e exposição pública, cor, extensão/tamanho da descrição, formato
+de imagens/anexos, limites e validações, necessidade e conteúdo dos dados
+para conferência presencial. **Local de perda/achado e local de guarda
+são campos distintos por regra já aprovada**. A seleção não autoriza
+implementar os elementos do Figma como obrigatórios sem revisão.
+
+**Bloqueia:** modelo completo, formulários reais, DTOs, codec definitivo
+e correspondências que dependam desses atributos.
+**Revisão:** equipe; Marcelo (modelo), Mariana (interface) e Matheus (JSON).
 
 ### P02 — Datas e índice temporal
 
-Qual data será indexada: perda/achado ou cadastro? `date` basta ou há hora?
-O que fazer quando a data não estiver disponível? Qual timezone para
-conversões? Qual limite inclusivo/exclusivo e ordem de empate desejados?
-Uma ocorrência pode ter mais de uma data consultável?
+**Seleção do solicitante:** utilizar na AVL a **data da perda para
+registros PERDIDO e a data do achado para registros ENCONTRADO**, e
+não a data do cadastro. A seleção está **pendente de aprovação da equipe**.
 
-IDs opacos em string, limites inclusivos e desempate não especificado são
-convenções técnicas v0 propostas, não decisões de produto. A AVL pode ser
-desenvolvida com pares sintéticos antes de escolher o campo do modelo.
+**Referência de IHC:** a secretaria apresenta também data de recebimento
+pelo setor e tempo de guarda. São informações diferentes da data do
+achado e não devem substituí-la silenciosamente no índice.
 
-Bloqueia: extrator de data, consulta real e sincronização após edição.
-Revisão: Leandro, Marcelo, Matheus e Luís.
+**Ainda a decidir:** como lidar com data aproximada, inválida ou
+ausente; se haverá horário, precisão e fuso; filtros por período e
+fronteiras inclusivas; desempate e múltiplos registros na mesma data;
+atualização do índice quando data for editada; como calcular tempo de
+guarda sem presumir data de recebimento. IDs opacos e chave composta
+`(data, id)` permanecem sugestões técnicas, não decisões definitivas.
+
+**Bloqueia:** extrator de data, consultas reais e sincronização após edição.
+**Revisão:** Leandro, Marcelo, Matheus e Luís. A AVL pode avançar com
+pares sintéticos antes da aprovação.
 
 ### P03 — Política de correspondência
 
-Proposta existente: categoria 30, cor 20, local 20, proximidade temporal 20,
-descrição 10; até 5 candidatos, limiar inicial 60/100.
+**Seleção do solicitante:** adotar **somente como configuração inicial
+para testes** a proposta já discutida: categoria 30, cor 20,
+local da perda/achado 20, proximidade de data 20, termos da descrição
+10 pontos; mostrar até 5 candidatos e usar limiar inicial 60/100.
+**Não é limiar validado, nem regra final de produção.**
 
-Faltam tratamento de valores ausentes, normalização, janela temporal,
-comparação de descrição/local, desempates, status elegíveis, tipos elegíveis,
-vínculos existentes, explicação dos resultados e critério para validar o limiar.
-Não assumir que campo ausente vale zero nem redistribuir pesos sem decisão.
-O total 100 é apenas a soma proposta; não valida eficácia da regra.
+**Regras já aprovadas:** algoritmo determinístico, sem IA; apenas
+sugestões PERDIDO ↔ ENCONTRADO, sem confirmar propriedade ou alterar
+status. O setor de guarda não deve ser usado como substituto do local
+da perda/achado na comparação.
 
-Bloqueia: matching pontuado final, campos de resultado e testes de expectativa.
-Revisão: André e equipe. Pode preparar política parametrizável e cenários,
-sem IA, sem confirmar propriedade e sem mudar status (restrições já aprovadas).
+**Ainda a decidir/testar:** dados ausentes, normalização sem pontuação
+artificialmente alta, evidência mínima comparável, janela temporal,
+critérios para variações de categoria, análise de termos, desempate,
+exclusão de ocorrências encerradas/vinculadas, apresentação do motivo
+da sugestão, cenários de falsos positivos e métricas para recalibrar
+pesos e limiar. Exemplo de cuidado: categoria isolada não deve gerar
+correspondência forte por normalização indevida.
+
+**Bloqueia:** pontuação definitiva, contrato dos resultados e testes de
+qualidade do matching. **Revisão:** André com equipe. Pode começar
+com parâmetros alteráveis e fixtures sintéticas, identificados
+explicitamente como experimento.
 
 ### P04 — Exclusão física ou lógica
 
-Decidir retenção, visibilidade pública, possibilidade de restauração,
-representação no JSON, efeito na AVL, histórico e comportamento do vínculo.
-Não criar `excluido`, `deleted_at` ou apagar arquivos como decisão implícita.
+**Seleção do solicitante:** preferir **exclusão física**, sujeita a
+alinhamento da equipe. Isso significaria retirar definitivamente a
+ocorrência da Lista e do JSON, atualizar a AVL e não exibi-la em buscas.
 
-Bloqueia: implementação de `excluir` e testes de consultas após exclusão.
-Revisão: equipe; Marcelo, Matheus, Leandro e Luís avaliam impacto.
+**Ainda a decidir:** impacto sobre ocorrência vinculada (não criar
+referência órfã), exclusão ou retenção de imagens, política de
+confirmação e permissões, eventual necessidade de trilha mínima de
+auditoria/retensão e comportamento em falha durante a gravação.
+A modal de confirmação do Figma demonstra a ação, mas não decide
+sozinha os efeitos sobre dados.
 
-### P05 — Vínculos e transições não especificadas
+**Bloqueia:** operação real de `excluir`, testes do ciclo completo
+e integridade de vínculos/índice. **Revisão:** equipe; Marcelo, Matheus,
+Leandro e Luís.
 
-Está aprovado que um par PERDIDO/ENCONTRADO pode ser vinculado, que resolução
-após confirmação afeta ambos e que reabertura de um afeta ambos.
+### P05 — Vínculos e transições
 
-Faltam quem vincula/desvincula, cardinalidade, substituição de vínculo,
-status permitidos ao vincular, representação, efeitos de cancelamento/exclusão
-e transições adicionais. Não presumir um ID único de parceiro, múltiplos
-parceiros, criação pública ou resolução automática ao vincular.
+**Seleção do solicitante:** **um vínculo 1:1** entre um PERDIDO e um
+ENCONTRADO, **feito por secretário autenticado**, podendo o secretário
+atuar em qualquer bloco. A seleção está pendente de aprovação coletiva.
 
-Bloqueia: schema de vínculos, endpoint, autorização e mutações relacionadas.
-Revisão: equipe; Marcelo e Luís coordenam com Matheus e André.
+**Aprovado anteriormente:** sugerir correspondência não vincula nem
+altera status automaticamente; após confirmação de devolução presencial,
+as duas ocorrências vinculadas passam a RESOLVIDO; reabrir uma reabre
+a outra. Não permitir dois parceiros para a mesma ocorrência se 1:1
+for aprovado.
+
+**Ainda a decidir:** ação e permissão para desfazer/substituir vínculo,
+possibilidade de vincular antes da conferência presencial, elegibilidade
+por status, vínculo de pares já encerrados, cancelamento e exclusão de
+um parceiro, como manter histórico mínimo e comportamento atômico nas
+mutações/JSON. Não confundir vínculo com conclusão da devolução.
+
+**Bloqueia:** esquema de associação, rotas de vínculo, controle de
+permissões e atualização conjunta. **Revisão:** equipe; Marcelo e Luís
+com Matheus e André.
 
 ### P06 — Cancelamento
 
-Motivos, obrigatoriedade de justificativa, campos, visibilidade e transições
-de/para `CANCELADO` não foram aprovados. Propagação em pares também não foi
-definida. Não transformar uma lista de motivos em enum definitivo.
+**Seleção do solicitante:** exigir **justificativa obrigatória** quando
+secretário mudar a situação para CANCELADO; decisão ainda não ratificada
+pela equipe.
 
-Bloqueia: contexto final de cancelamento e testes dessas transições.
-Revisão: equipe; Marcelo, Luís e Mariana avaliam implementação.
+**Aprovado anteriormente:** existem ABERTO, RESOLVIDO e CANCELADO;
+secretários gerenciam situação, com reabertura possível nos termos
+já definidos para ocorrências vinculadas.
+
+**Ainda a decidir:** motivos pré-definidos ou texto livre, tamanho e
+validação da justificativa, quem poderá visualizá-la, registro no JSON,
+qual transição pode cancelar ou reabrir, propagação de cancelamento ao
+par e diferença entre cancelamento e exclusão física. O Figma fornece
+um fluxo de cancelamento, mas não resolve todas essas regras.
+
+**Bloqueia:** mutações finais e testes de cancelamento/reabertura.
+**Revisão:** equipe; Marcelo, Luís e Mariana.
 
 ## Pendências técnicas e de integração identificadas nesta preparação
 
@@ -116,15 +197,25 @@ de mutações reais, sem bloquear os algoritmos isolados.
 
 ### P09 — Contas e alcance dos perfis
 
-Definir identificador de login, campos e unicidade; quais ações "gerenciar"
-inclui (edição, desativação, exclusão, reset); ciclo de sessão, recuperação
-de acesso e rotina inicial segura. Não criar login/senha padrão.
+**Seleção do solicitante:** o administrador deverá **cadastrar, editar,
+desativar e redefinir senhas** de contas de secretários. Essa lista de
+operações requer aprovação da equipe; não inclui exclusão física de
+contas nem autocadastro público. O Figma atual contempla o login da
+secretaria, mas **não evidencia a tela completa de gestão de contas**.
 
-Administrador tem responsabilidade aprovada de contas, sem herança automática
-de poderes de secretário. Qualquer acúmulo de funções requer confirmação.
-Não ampliar automaticamente gestão para outros administradores.
+**Aprovado anteriormente:** apenas administrador gerencia contas,
+secretários não gerenciam contas nem ficam restritos a ocorrências do
+próprio bloco; administrador não herda automaticamente ações de
+secretário. A conta administrativa inicial é provisionada com segurança.
 
-Revisão: Luís e equipe. Bloqueia schema completo, gestão e rotas protegidas.
+**Ainda a decidir:** identificador de login (o formulário do Figma
+exibe e-mail institucional, ainda como referência), campos e unicidade,
+desativação e bloqueio de sessões ativas, recuperação/redefinição
+segura de senhas, ciclo de sessão, campos visíveis na administração,
+proteção de credenciais e processo inicial. Não gerar login/senha padrão.
+
+**Revisão:** Luís e equipe. **Bloqueia:** modelo definitivo de contas,
+gestão administrativa, autenticação e rotas protegidas.
 
 ### P10 — Contrato HTTP e proteção antes das rotas
 
@@ -132,6 +223,15 @@ Fechar payloads, contextos Jinja, filtros, paginação, mensagens, redirects,
 tratamento de erros e eventuais respostas JSON. Definir proteção CSRF para
 POSTs, política de sessão e configuração HTTPS antes de expor mutações.
 Não confundir ocultação de botão com autorização no backend.
+
+**Comportamentos do Figma a detalhar no contrato, sem criar P13–P18:**
+modal de escolha de tipo com fechar/voltar; navbar ativa sem repassar
+cliques à tela; navegação e transições; busca por texto/código e filtros
+combinados por tipo, categoria, local e setor; estados vazios; validação,
+mensagens e confirmação do cadastro; explicação pública de status;
+área da secretaria (todos os blocos e "meu setor"); conferência presencial,
+cancelamento, exclusão, resolução e reabertura. Transições visuais não
+comprovam que backend, dados ou autorização estejam implementados.
 
 Revisão: Luís e Mariana; André valida a matriz no backend. Rascunhos de
 rotas e convenções de erro estão em [contratos](contratos.md).
@@ -156,6 +256,12 @@ fixação, mas mudanças incompatíveis devem atualizar consumidores juntos.
 
 ## Prioridade para liberar a integração
 
+**Antes de converter seleções em requisitos:** registrar a validação coletiva
+de P02, P04, P05, P06 e P09 e a configuração experimental de P03.
+P01 continua em revisão aberta. Os desenvolvedores podem trabalhar com
+mocks/testes parametrizados, mas não devem integrar comportamento definitivo
+com base apenas nas seleções deste documento.
+
 | Momento | Decisões | Trabalho paralelo que pode continuar |
 | --- | --- | --- |
 | Antes de modelo/formulários/codec finais | P01, P02, identidade em P12 | Lista, AVL, layout com fixtures, testes de cenários |
@@ -165,4 +271,5 @@ fixação, mas mudanças incompatíveis devem atualizar consumidores juntos.
 
 Para registrar uma decisão, usar o ID Pxx, texto exato aprovado, data,
 participantes e módulos impactados; atualizar regras/contratos no mesmo PR.
-Nenhuma pendência foi marcada como aprovada nesta preparação.
+As seleções de 21/10/2026 permanecem **propostas para decisão da equipe**;
+nenhuma delas foi promovida a regra aprovada por esta atualização.
