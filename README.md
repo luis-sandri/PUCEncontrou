@@ -98,8 +98,14 @@ O JSON é a persistência das ocorrências; a Lista manual contém os registros
 em memória; a AVL manual é um índice auxiliar de datas e IDs. SQLite guarda
 contas administrativas. Interface e rotas não acessam dados diretamente.
 
-Categorias, campos exatos, pontuação, exclusão e justificativas de cancelamento
-continuam em aberto. Não há entrevistas ou dados reais incluídos nesta base.
+Categorias e campos exatos continuam em revisão. Para a equipe avaliar,
+foram selecionadas as seguintes propostas: data de perda/achado para a AVL;
+pontuação inicial de correspondência **somente para testes**; exclusão
+física; vínculo 1:1 criado por secretário; justificativa obrigatória
+para cancelar; gestão de contas de secretário com cadastro, edição,
+desativação e redefinição de senha. **Nenhuma dessas seleções é ainda
+aprovação coletiva**, e os efeitos e contratos pendentes constam em
+[pendências](docs/pendencias.md). Não há entrevistas ou dados reais incluídos nesta base.
 Contas, hashes, arquivos locais e segredos não devem entrar no Git. Nenhuma
 alteração de Jira, publicação, commit ou push faz parte desta preparação.
 
