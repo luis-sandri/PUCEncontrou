@@ -1,4 +1,5 @@
-"""Esboço técnico de Leandro: AVL manual como índice auxiliar de datas.
+"""
+Esboço técnico de Leandro: AVL manual como índice auxiliar de datas.
 
 Não contém nós, rotações ou balanceamento implementados.
 A classe concreta futura poderá se chamar ArvoreAVL.
