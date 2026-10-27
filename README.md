@@ -3,11 +3,13 @@
 Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
-**Etapa atual:** aplicação Flask mínima e núcleo da SCRUM-8 implementados.
+**Etapa atual:** aplicação Flask mínima, núcleo da SCRUM-8 e Lista Dinâmica
+manual da SCRUM-9 implementados.
 O modelo imutável, codec e operações de CRUD/vínculos estão testados por lotes
 com armazenamento fake. Somente `GET /` e arquivos estáticos estão disponíveis
-na web. Lista, AVL, persistência e serviços de autorização/upload ainda precisam
-ser integrados. Consulte o [guia da SCRUM-8](docs/scrum-8.md).
+na web. A Lista real também é exercitada com o núcleo em testes de integração;
+AVL, persistência e serviços de autorização/upload ainda precisam ser integrados.
+Consulte os guias da [SCRUM-8](docs/scrum-8.md) e [SCRUM-9](docs/scrum-9.md).
 
 ## Executar no Windows
 
@@ -49,8 +51,8 @@ Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 ```
 
 Os testes verificam a base Flask, modelo, codec, CRUD interno, integridade dos
-pares, conflitos e lotes. A infraestrutura de produção ainda não é exercitada:
-o armazenamento fake dos testes não substitui a Lista manual nem a persistência.
+pares, conflitos, lotes e Lista manual, incluindo integração com ocorrências.
+A sincronização real com persistência e AVL ainda não é exercitada.
 Os testes dos módulos ficam em `tests/unit/` e `tests/integration/`.
 Consulte [a organização dos testes](tests/README.md).
 

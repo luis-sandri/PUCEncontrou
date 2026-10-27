@@ -6,6 +6,11 @@
   `test_nucleo_ocorrencias.py`: modelo/codec e núcleo CRUD de SCRUM-8;
   armazenamento transacional fake, sem substituir a Lista de produção.
 - `exemplo_scrum8.py`: demonstração executável com fake somente para estudo.
+- `unit/test_lista_dinamica.py`: algoritmos manuais, expansão, posições,
+  busca, filtros, atualização e iteração da SCRUM-9.
+- `integration/test_lista_ocorrencias.py`: modelo, núcleo e Lista reais com
+  adaptador só de teste, sem persistência/AVL de produção.
+- `exemplo_scrum9.py`: demonstração executável usando a Lista manual real.
 - `integration/`: testes entre módulos, coordenados por André.
 - `conftest.py`: fixtures comuns; coordenar mudanças com Luís e André.
 

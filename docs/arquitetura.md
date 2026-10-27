@@ -1,5 +1,13 @@
 # Arquitetura e desenvolvimento em paralelo
 
+## Atualização SCRUM-9 — 27/10/2026
+
+`structures/lista_dinamica.py` contém `ListaDinamica[T]` manual, com buffer fixo,
+expansão, deslocamento, busca e filtros por predicado. A porta original permanece
+compatível. Modelo e núcleo da SCRUM-8 foram testados com a Lista real por um
+adaptador exclusivo dos testes. O contrato de produção Lista/AVL/JSON continua
+em SCRUM-13; nenhuma rota foi adicionada. Consulte [o guia](scrum-9.md).
+
 ## Atualização SCRUM-8 — 27/10/2026
 
 `models/ocorrencia.py` contém o modelo e codec sem I/O;

@@ -1,5 +1,14 @@
 # Pendências e propostas para revisão da equipe
 
+## Atualização SCRUM-9 — 27/10/2026
+
+Lista manual implementada em branch separada, com os algoritmos descritos no
+[guia](scrum-9.md). P11: capacidade inicial padrão 4, expansão por duplicação,
+buffer fixo alocado com lista Python sem operações prontas de crescimento ou
+remoção. A rubrica específica do professor continua a conferir; essa escolha
+técnica não registra uma aprovação coletiva ou institucional inexistente.
+Integração de produção com JSON/AVL continua em SCRUM-13.
+
 ## Atualização SCRUM-8 — 27/10/2026
 
 Marcelo confirmou exclusão física e aprovou o desenho em
@@ -22,7 +31,7 @@ aprovação coletiva das demais propostas históricas abaixo.
 - P09: adequar os esboços legados de SQLite para contas JSON com o responsável.
 - P10: serviços protegidos, verificação dos arquivos de foto e rotas são
   SCRUM-16; o núcleo não pode ser exposto diretamente.
-- P11: Lista manual será implementada separadamente em SCRUM-9.
+- P11: Lista manual foi implementada na atualização SCRUM-9 acima.
 
 As seções seguintes preservam o histórico de 21/10/2026. Em caso de
 divergência, prevalecem as decisões e os limites desta atualização.

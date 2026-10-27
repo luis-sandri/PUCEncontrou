@@ -106,16 +106,22 @@ __len__() -> int
 __iter__() -> Iterator[T]
 ```
 
-Convenção proposta: inserir ao final; preservar ordem dos demais elementos;
+Implementado em SCRUM-9: inserir ao final; preservar ordem dos demais elementos;
 `len` retorna quantidade de elementos ocupados, não capacidade; iterar apenas
 elementos ocupados. `obter`, `atualizar` e `remover` usam índices entre 0 e
-`len-1` e lançam `IndexError` para inválidos, inclusive negativos. A equipe
-pode ajustar essa convenção antes de implementar consumidores.
+`len-1` e lançam `IndexError` para posições inválidas, inclusive negativos.
+Índices não inteiros (inclusive booleanos) lançam `TypeError`.
 
-Busca por ID, regras de status e validações do domínio ficam no serviço.
-Capacidade inicial, fator de crescimento e representação do array ficam com
-Marcelo conforme rubrica acadêmica (P11). Não há implementação de buffer,
-redimensionamento ou inserção nesta base.
+`ListaDinamica[T]` usa buffer de tamanho fixo (padrão 4), expansão por duplicação
+e cópia/deslocamento manuais. A porta mínima acima foi preservada. A classe
+concreta acrescenta `capacidade`, `buscar_indice(predicado)`, `buscar(predicado)`
+e `filtrar(predicado)`, que retorna outra Lista manual. Ver [guia](scrum-9.md).
+
+Busca por ID usa predicado; regras de status e validações ficam no serviço.
+Filtros genéricos atendem tipo/categoria/local/status e guarda separada; os
+filtros nomeados continuam no núcleo. Iteradores independentes detectam mutação
+com `RuntimeError`. A representação de buffer deve ser conferida com a rubrica
+do professor (P11); não há aprovação institucional presumida.
 
 ## AVL e consulta temporal — Leandro
 
