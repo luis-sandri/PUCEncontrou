@@ -1,7 +1,8 @@
 """Esboço de CRUD e regras; Marcelo e Luís revisam antes da integração.
 
-Mapping é temporário, até os campos e DTOs serem aprovados. Não autoriza
-repassar request.form sem conversão e validação. Não há CRUD implementado.
+Esta porta externa permanece reservada para SCRUM-16 (autorização e uploads).
+O núcleo interno de CRUD está em nucleo_ocorrencias.py; não o expor diretamente
+em rotas. Mapping não autoriza repassar request.form sem conversão e validação.
 """
 
 from collections.abc import Iterable, Mapping

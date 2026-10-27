@@ -1,5 +1,32 @@
 # Pendências e propostas para revisão da equipe
 
+## Atualização SCRUM-8 — 27/10/2026
+
+Marcelo confirmou exclusão física e aprovou o desenho em
+`superpowers/specs/2026-10-27-scrum-8-ocorrencias-design.md`. O núcleo usa as
+escolhas registradas no [guia](scrum-8.md); isso não equivale a registrar
+aprovação coletiva das demais propostas históricas abaixo.
+
+- Foto obrigatória em ambos os tipos e contas em JSON são decisões vigentes
+  de 19/10/2026 trazidas pelo usuário; foto opcional e SQLite ficam superados.
+- P01: campos mínimos provisórios implementados; categorias finais e demais
+  obrigatoriedades continuam em revisão. Sem limites de upload inventados.
+- P04: exclusão física escolhida; limpa vínculo preservando o parceiro.
+  Descarte físico das imagens e eventual auditoria continuam na integração.
+- P05: núcleo implementa vínculo 1:1 e resolução/reabertura conjuntas.
+  Desvinculação/substituição autônoma não foi implementada.
+- P06: cancelamento de ABERTO isolado; cancelamento de par bloqueado.
+  Justificativa e propagação continuam pendentes.
+- P07/P08: codec implementado; arquivos, migração de legados, recuperação,
+  persistência e publicação indivisível de Lista/AVL/JSON permanecem pendentes.
+- P09: adequar os esboços legados de SQLite para contas JSON com o responsável.
+- P10: serviços protegidos, verificação dos arquivos de foto e rotas são
+  SCRUM-16; o núcleo não pode ser exposto diretamente.
+- P11: Lista manual será implementada separadamente em SCRUM-9.
+
+As seções seguintes preservam o histórico de 21/10/2026. Em caso de
+divergência, prevalecem as decisões e os limites desta atualização.
+
 **Estado em 21/10/2026:** o solicitante selecionou alternativas para P01, P02, P03,
 P04, P05, P06 e P09. **Essas seleções não equivalem à aprovação coletiva.**
 Este documento registra o encaminhamento escolhido e as lacunas restantes,

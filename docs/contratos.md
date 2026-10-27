@@ -1,5 +1,20 @@
 # Contratos iniciais v0
 
+## Atualização SCRUM-8 — 27/10/2026
+
+O modelo concreto e o núcleo interno foram implementados conforme desenho
+aprovado por Marcelo. Seu contrato vigente está em [SCRUM-8](scrum-8.md):
+`Ocorrencia`, `SituacaoGuarda`, `AlteracaoOcorrencia`, `LoteOcorrencias`,
+`NucleoOcorrencias` e `ArmazenamentoOcorrenciasPorta`. Essa seção e o guia
+substituem os trechos v0 divergentes abaixo sobre modelo e CRUD interno.
+
+Os protocolos externos `LeituraOcorrenciasPorta` e `ServicoOcorrenciasPorta`
+mantêm suas assinaturas: são esboços do serviço autenticado de SCRUM-16,
+não a classe interna `NucleoOcorrencias`. Nenhuma rota nova foi registrada.
+SCRUM-13 implementará a porta de aplicação atômica com Lista/AVL/JSON.
+Foto é obrigatória nos dois tipos. Contas passam a JSON; referências antigas
+a SQLite descrevem a preparação anterior e aguardam ajuste do módulo de contas.
+
 **Estado: esboços técnicos propostos para revisão dos responsáveis.**
 As regras explicitamente aprovadas estão em [regras de negócio](regras-negocio.md).
 Os nomes, tipos auxiliares, retornos e convenções desta página não são uma
@@ -14,7 +29,7 @@ Não há validação de conformidade em runtime nesta base.
 ## Convenções e composição propostas
 
 - IDs são strings opacas e estáveis; consumidor não interpreta nem usa posição
-  da Lista como ID. UUID, sequência ou outro gerador ainda precisam de revisão.
+  da Lista como ID. O modelo concreto gera UUID textual e preserva IDs na recarga.
 - `date` representa uma chave de calendário já convertida pelo serviço.
   Não escolher implicitamente entre data de perda/achado e data de cadastro.
 - `Iterable`/`Iterator` são retornos percorríveis, sem promessa de `list`,
@@ -26,7 +41,7 @@ Não há validação de conformidade em runtime nesta base.
 - Serviços recebem suas dependências por construtor; a fábrica futura registra
   as instâncias. Rotas não criam serviços, não importam uma app global e não
   instanciam estruturas por requisição.
-- `ator` vem da autenticação do backend e da conta carregada no SQLite.
+- `ator` vem da autenticação do backend e da conta carregada na persistência de contas.
   Não confiar em ID/perfil enviados pelo navegador. Sem ator válido, negar
   mutações protegidas. O serviço valida permissão além da proteção da rota.
 - Dados públicos são projetados em DTO/contexto de template; objetos do modelo,
@@ -59,22 +74,24 @@ Código: `app/models/ocorrencia.py`.
 | Tipo | `TipoOcorrencia.PERDIDO`, `.ENCONTRADO` | Vocabulário do contexto |
 | Status | `StatusOcorrencia.ABERTO`, `.RESOLVIDO`, `.CANCELADO` | Aprovado |
 | Visão mínima | `OcorrenciaPorta.id: str`, `.tipo: TipoOcorrencia`, `.status: StatusOcorrencia` | Propriedades de leitura propostas |
-| Novo registro | Começa `ABERTO`; ID gerado no backend | Status aprovado; estratégia de ID pendente |
-| Modelo concreto | Classe `Ocorrencia`, campos e validações | A implementar após P01/P02 |
+| Novo registro | Começa `ABERTO`; UUID textual no backend | Implementado em SCRUM-8 |
+| Modelo concreto | Classe imutável `Ocorrencia`, campos e validações | Implementado; campos detalhados no guia |
 
-Assinaturas de codec/modelo para discussão com Matheus, **não implementadas**:
+Assinaturas de codec/modelo implementadas; integração de arquivo com Matheus:
 
 ```python
 Ocorrencia.criar(dados: Mapping[str, object]) -> Ocorrencia
-Ocorrencia.para_registro() -> Mapping[str, object]
+ocorrencia.corrigir(dados: Mapping[str, object]) -> Ocorrencia
+ocorrencia.para_registro() -> dict[str, object]
 Ocorrencia.de_registro(registro: Mapping[str, object]) -> Ocorrencia
 ```
 
 O codec não deve gerar novo ID, forçar `ABERTO` ao recarregar, perder vínculos
 ou confundir os dois locais. A criação não é um atalho para alterar status.
-Campos de data, descrição, categoria, cor, contato e vínculos ainda não estão
-no protocolo porque obrigatoriedade, representação e exposição dependem da
-equipe. Validação não deve ser distribuída em seis versões incompatíveis.
+Campos concretos de data, descrição, categoria, cor, foto, guarda e vínculos
+estão no modelo e no guia; o protocolo mínimo de leitura permanece compatível.
+Não foram adicionados dados de contato. Exposição pública depende do serviço.
+Validação não deve ser distribuída em seis versões incompatíveis.
 
 ## Lista Dinâmica — Marcelo
 
@@ -184,15 +201,14 @@ vincular(perdido_id: str, encontrado_id: str, *, ator: ContaAdministrativaPorta)
 - `contexto` reserva confirmação presencial/justificativa; conteúdo e forma
   de registrar confirmação ainda precisam ser definidos. Receber um boolean
   do cliente não dispensa identidade, autorização e ação do secretário.
-- `vincular` não confirma devolução nem altera status automaticamente. O
-  ator obrigatório é uma proposta conservadora; quem pode vincular precisa
-  de aprovação em P05 antes de expor endpoint ou implementar a autorização.
-- `excluir` esconde a estratégia física/lógica do consumidor; efeito em
-  consultas, arquivo, índice e vínculos aguarda P04/P05.
+- `vincular` não confirma devolução nem altera status automaticamente.
+  No desenho SCRUM-8, a ação é do secretário; SCRUM-16 implementará a proteção.
+- `excluir` usa exclusão física conforme escolha do usuário. O núcleo prepara
+  remoção e limpeza do vínculo; aplicação em Lista/AVL/JSON pertence a SCRUM-13.
 
 O serviço é o único coordenador de mutações da Lista, índice e snapshot.
 Não permitir edição direta de objetos retornados para contornar regras.
-Definir DTOs/cópias ou imutabilidade no modelo concreto. A estratégia de
+O modelo concreto já é imutável. A estratégia de
 atomicidade memória/JSON é parte da integração P08, não existe nesta base.
 
 ## Correspondências — André

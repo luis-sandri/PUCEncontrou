@@ -23,3 +23,7 @@ class FalhaAutenticacao(ErroAplicacao):
 
 class ErroPersistencia(ErroAplicacao):
     """Leitura ou gravação não concluída; não ocultar perda de dados."""
+
+
+class ConflitoAlteracao(ErroAplicacao):
+    """O estado mudou desde a preparação; refazer a operação antes de confirmar."""

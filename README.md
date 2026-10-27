@@ -3,10 +3,11 @@
 Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
-**Etapa atual:** aplicação Flask mínima executável, contratos preliminares
-e documentação de integração. Somente `GET /` e arquivos estáticos estão
-disponíveis. CRUD, estruturas acadêmicas, persistência, correspondência e
-autenticação serão implementados pelos responsáveis em etapas posteriores.
+**Etapa atual:** aplicação Flask mínima e núcleo da SCRUM-8 implementados.
+O modelo imutável, codec e operações de CRUD/vínculos estão testados por lotes
+com armazenamento fake. Somente `GET /` e arquivos estáticos estão disponíveis
+na web. Lista, AVL, persistência e serviços de autorização/upload ainda precisam
+ser integrados. Consulte o [guia da SCRUM-8](docs/scrum-8.md).
 
 ## Executar no Windows
 
@@ -38,7 +39,7 @@ JSON, SQLite, administrador ou diretórios de persistência nesta etapa.
 
 O depurador é para uso local. O frontend inicial usa Bootstrap 5.3.8 via
 CDN com integridade; o carregamento desses estilos requer internet.
-SQLite faz parte da biblioteca padrão; Jinja2 e Werkzeug vêm com Flask.
+Jinja2 e Werkzeug vêm com Flask.
 Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 
 ## Testar
@@ -47,9 +48,10 @@ Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Os testes atuais verificam renderização, inicialização, configuração,
-isolamento entre instâncias e ausência de endpoints de negócio. Os testes
-futuros de módulos ficam em `tests/unit/` e `tests/integration/`.
+Os testes verificam a base Flask, modelo, codec, CRUD interno, integridade dos
+pares, conflitos e lotes. A infraestrutura de produção ainda não é exercitada:
+o armazenamento fake dos testes não substitui a Lista manual nem a persistência.
+Os testes dos módulos ficam em `tests/unit/` e `tests/integration/`.
 Consulte [a organização dos testes](tests/README.md).
 
 O VS Code oferece extensões recomendadas, descoberta de pytest e execução
@@ -65,7 +67,7 @@ app/
   models/                Ocorrência (Marcelo), contas (Luís)
   structures/            Lista Dinâmica (Marcelo), AVL (Leandro)
   services/              CRUD/regras, consultas, correspondência, contas
-  repositories/          JSON (Matheus), SQLite (Luís)
+  repositories/          JSON de ocorrências (Matheus), contas (Luís; migração pendente)
   routes/                HTTP e autorização (Luís)
   templates/             Jinja2 (Mariana)
   static/                CSS, JavaScript e imagens (Mariana)
@@ -95,8 +97,11 @@ ou AVL. Não há composição dos serviços de negócio na fábrica ainda.
    progressivamente. Luís coordena a fábrica; André coordena testes integrados.
 
 O JSON é a persistência das ocorrências; a Lista manual contém os registros
-em memória; a AVL manual é um índice auxiliar de datas e IDs. SQLite guarda
-contas administrativas. Interface e rotas não acessam dados diretamente.
+em memória; a AVL manual é um índice auxiliar de datas e IDs. Contas também
+serão persistidas em JSON por decisão informada em 19/10/2026. O esboço legado
+`sqlite_contas.py` e `CONTAS_SQLITE` ainda aguardam adequação pelo responsável;
+não são uma implementação ativa de persistência. Interface e rotas não acessam
+dados diretamente. Foto é obrigatória nos dois tipos de ocorrência.
 
 Categorias e campos exatos continuam em revisão. Para a equipe avaliar,
 foram selecionadas as seguintes propostas: data de perda/achado para a AVL;
@@ -105,7 +110,10 @@ física; vínculo 1:1 criado por secretário; justificativa obrigatória
 para cancelar; gestão de contas de secretário com cadastro, edição,
 desativação e redefinição de senha. **Nenhuma dessas seleções é ainda
 aprovação coletiva**, e os efeitos e contratos pendentes constam em
-[pendências](docs/pendencias.md). Não há entrevistas ou dados reais incluídos nesta base.
+[pendências](docs/pendencias.md). A SCRUM-8 usa o desenho aprovado por Marcelo
+em 27/10/2026, incluindo exclusão física e regras provisórias de campos e
+transições descritas no guia; isso não registra aprovação coletiva fictícia.
+Não há entrevistas ou dados reais incluídos nesta base.
 Contas, hashes, arquivos locais e segredos não devem entrar no Git. Nenhuma
 alteração de Jira, publicação, commit ou push faz parte desta preparação.
 

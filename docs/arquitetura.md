@@ -1,5 +1,19 @@
 # Arquitetura e desenvolvimento em paralelo
 
+## Atualização SCRUM-8 — 27/10/2026
+
+`models/ocorrencia.py` contém o modelo e codec sem I/O;
+`models/alteracao_ocorrencias.py` contém lotes imutáveis e validação de snapshots;
+`services/nucleo_ocorrencias.py` contém operações internas preparadas por lote.
+Não há novo armazenamento de produção. A porta `ArmazenamentoOcorrenciasPorta`
+será implementada por SCRUM-13 usando Lista/AVL/JSON; os fakes atuais existem
+somente em testes. O serviço autenticado de SCRUM-16 envolverá o núcleo,
+validará uploads e só então poderá expor rotas. Veja [o contrato](scrum-8.md).
+
+Por decisão vigente de 19/10/2026 informada pelo usuário, contas também usam
+JSON. As referências a SQLite no desenho histórico abaixo estão superadas;
+a adequação dos esboços/configuração pertence ao responsável pelas contas.
+
 ## Base informada e organização técnica
 
 A arquitetura aprovada é um monólito web em camadas, com Flask, Jinja2,
