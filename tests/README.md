@@ -5,8 +5,12 @@
 - `integration/`: testes entre módulos, coordenados por André.
 - `conftest.py`: fixtures comuns; coordenar mudanças com Luís e André.
 
-Executar `python -m pytest` na raiz. Os testes existentes verificam somente
-a base. Não há testes pulados que deem a impressão de módulos concluídos.
+Executar `python -m pytest` na raiz. Além da base, a branch de Luís testa o
+módulo experimental de contas: `unit/test_sqlite_contas.py`,
+`unit/test_servicos_contas.py`, `integration/test_contas_cli.py` e
+`integration/test_contas_http.py`. A integração usa CLI, SQLite temporário e
+cliente Flask reais, com verificações de autorização, CSRF, sessões e falhas
+transacionais. Não há testes pulados que deem a impressão de módulos concluídos.
 
 Se o ambiente de execução restringir a pasta temporária do sistema, usar
 `python -m pytest --basetemp .tools/pytest-temporarios`. Esse diretório é

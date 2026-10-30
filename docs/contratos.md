@@ -1,4 +1,4 @@
-# Contratos iniciais v0
+# Contratos iniciais v0 e módulo experimental de contas
 
 **Estado: esboços técnicos propostos para revisão dos responsáveis.**
 As regras explicitamente aprovadas estão em [regras de negócio](regras-negocio.md).
@@ -10,6 +10,10 @@ Cada `Porta` é um `typing.Protocol`, não uma classe concreta. Ninguém deve
 instanciá-la nem herdar dela para receber uma implementação padrão. A
 implementação futura pode satisfazer o contrato por suas assinaturas.
 Não há validação de conformidade em runtime nesta base.
+
+**Implementação candidata de Luís (30/10/2026):** contas têm contrato executável
+experimental descrito abaixo. P09/P10 continuam pendentes; sua implementação
+exige opt-in e não registra aprovação coletiva. Demais módulos permanecem v0.
 
 ## Convenções e composição propostas
 
@@ -212,48 +216,108 @@ com testes reprodutíveis e sem qualquer provedor de IA.
 
 ## Contas, SQLite e autenticação — Luís
 
-Códigos: `app/models/conta.py`, `app/repositories/sqlite_contas.py`,
-`app/services/autenticacao.py`, `app/services/contas.py`.
+**Contrato executável experimental desta branch, para revisão.**
+`ContaAdministrativa` e `CredenciaisConta` são dataclasses imutáveis.
+`ContaAdministrativaPorta` e a visão concreta contêm `id: str`, `perfil: Perfil`,
+`nome: str`, `identificador: str` e `ativa: bool`. A credencial privada acrescenta
+`senha_hash: str` (omitido do repr) e `para_visao() -> ContaAdministrativa`.
+Rotas projetam somente os cinco campos administrativos; não serializam credenciais.
+
+`RepositorioContasSQLite(caminho: Path | str)` não realiza I/O no construtor.
+O protocolo `RepositorioContasPorta` e o concreto oferecem:
 
 ```python
-# Visão administrativa sem senha
-ContaAdministrativaPorta.id: str
-ContaAdministrativaPorta.perfil: Perfil
-# Somente repositório e autenticação
-CredenciaisContaPorta.senha_hash: str
-
-# Repositório inicial (gestão completa depende de P09)
+inicializar() -> None
+inicializar_administrador(dados: Mapping[str, object], *, senha_hash: str) -> ContaAdministrativa
 buscar_por_id(conta_id: str) -> CredenciaisContaPorta | None
 buscar_por_identificador(identificador: str) -> CredenciaisContaPorta | None
 salvar_secretario(dados: Mapping[str, object], *, senha_hash: str) -> ContaAdministrativaPorta
-
-# Serviços
-autenticar(identificador: str, senha: str) -> ContaAdministrativaPorta
-cadastrar_secretario(dados: Mapping[str, object], senha: str, *, ator: ContaAdministrativaPorta) -> ContaAdministrativaPorta
-gerenciar_secretario(conta_id: str, alteracoes: Mapping[str, object], *, ator: ContaAdministrativaPorta) -> ContaAdministrativaPorta
+listar_secretarios() -> list[ContaAdministrativa]
+atualizar_secretario(conta_id: str, dados: Mapping[str, object], *, senha_hash: str | None = None) -> ContaAdministrativa
+criar_sessao(conta_id: str, token_hash: str, expira_em: int, *, senha_hash_esperada: str) -> None
+buscar_sessao(token_hash: str, agora: int) -> CredenciaisContaPorta | None
+revogar_sessao(token_hash: str) -> None
 ```
 
-SQLite usa parâmetros em consultas e transações, sem SQL montado por entrada
-do usuário. Serviços geram/verificam hashes com biblioteca apropriada (por
-exemplo Werkzeug); nunca implementam criptografia própria nem armazenam
-senha em texto. Senha recebida pelo serviço é transitória e não vai para
-logs, DTOs, templates ou arquivos de configuração.
+O concreto devolve `CredenciaisConta`/`ContaAdministrativa` onde a porta descreve
+essas visões. IDs UUID, esquema SQLite v1, SQL parametrizado e escritas com
+`BEGIN IMMEDIATE`. Consultas não criam arquivo. Inicialização explícita recusa
+versão desconhecida ou banco não vazio sem versão reconhecida, sem apagar dados.
+O esquema não cria contas; transação e índice garantem administrador inicial único.
 
-Falha de autenticação propõe `FalhaAutenticacao` com mensagem pública
-genérica. Gestão exige administrador no backend; secretário não recebe
-operações de gestão. Identificador de login, unicidade, desativação, reset
-e campos de conta aguardam P09; as operações do repositório para essa
-gestão completa serão adicionadas após a definição. Nenhuma conta padrão.
+Criação recebe somente `nome` e `identificador`; atualização do repositório
+recebe `nome`, `identificador` e/ou `ativa`, com senha já em hash. Só atualiza
+secretário. Desativação, redefinição de senha ou mudança do identificador revoga
+todas as sessões na mesma transação, com rollback conjunto em falha. A criação
+de sessão confirma conta ativa e hash ainda igual ao autenticado para impedir
+login com senha antiga após reset concorrente.
 
-O bootstrap inicial está reservado em `scripts/README.md`; não há rota,
-comando ativo nem senha de administrador nesta etapa.
+```python
+# ServicoContas(repositorio: RepositorioContasPorta)
+listar_secretarios(*, ator: ContaAdministrativaPorta) -> list[ContaAdministrativa]
+cadastrar_secretario(dados: Mapping[str, object], senha: str, *, ator: ContaAdministrativaPorta) -> ContaAdministrativa
+gerenciar_secretario(conta_id: str, alteracoes: Mapping[str, object], *, ator: ContaAdministrativaPorta) -> ContaAdministrativa
+
+# ServicoAutenticacao(repositorio, duracao_sessao_segundos: int = 1800)
+autenticar(identificador: str, senha: str) -> ContaAdministrativa
+iniciar_sessao(identificador: str, senha: str) -> tuple[ContaAdministrativa, str]
+obter_sessao(token: str) -> ContaAdministrativa | None
+encerrar_sessao(token: str) -> None
+inicializar_administrador(dados: Mapping[str, object], senha: str) -> ContaAdministrativa
+```
+
+As portas dos serviços mantêm retornos `ContaAdministrativaPorta`;
+`GestaoContasPorta.listar_secretarios` retorna `Sequence[ContaAdministrativaPorta]`.
+Bootstrap é método concreto exclusivo da CLI. Valida entradas, prepara esquema
+e insere administrador; repetir recusa substituição. Comando `flask --app app
+contas inicializar` pede senha oculta/confirmada e não aceita senha em opção.
+
+Gestão recarrega ator pelo ID no banco e exige administrador ativo, sem confiar
+no perfil recebido. Secretário não gerencia contas; administrador não ganha
+ações de secretário. `gerenciar_secretario` aceita somente `nome`, `identificador`,
+`ativa: false` e/ou `senha`; não há reativação ou exclusão. Campos extras são
+recusados, inclusive `perfil`, `ator` e `senha_hash`.
+
+Escolhas provisórias: nome com 1–120 caracteres após `strip`, sem controles;
+identificador genérico único com 3–120 caracteres após `strip`/`casefold`, sem
+espaços/controles, sem exigir e-mail; senha com 12–128 caracteres Unicode
+codificáveis em UTF-8, sem normalização. Hash/verificação são do Werkzeug.
+Senha em texto é transitória e não entra em logs, DTOs ou configuração.
+
+Falha de autenticação é genérica para login ausente, incorreto ou inativo.
+Sessões usam token de 32 bytes aleatórios; SQLite guarda somente SHA-256 do
+token, ID da conta e expiração absoluta em segundos Unix. Logout revoga no
+servidor, inclusive cópias antigas de cookie. Prazo inicial de 1.800 segundos
+é configurável por `CONTAS_DURACAO_SESSAO_SEGUNDOS` na fábrica.
+
+`CONTAS_HABILITADAS` é booleano (ambiente `PUC_CONTAS_HABILITADAS=true`),
+falso por padrão. Só habilitado compõe serviços concretos em
+`app.extensions['autenticacao']` e `['contas']` e registra CLI/rotas. A fábrica
+não inicializa banco ou administrador e não instancia protocolos.
+Veja [como validar e as limitações](desenvolvimento-luis.md).
 
 ## HTTP e Jinja2 — Luís e Mariana
 
 **Implementado:** `GET /`, endpoint `publicas.inicio`, template `index.html`,
 sem contexto de domínio, mais o endpoint estático padrão do Flask.
 
-**Rascunho de fronteira futura; não registrado:**
+**Contas por opt-in:** API JSON experimental, sem telas novas. `GET /login`
+entrega CSRF; `POST /login` autentica e rotaciona CSRF; `GET /sessao` entrega
+`{conta, csrf_token}`; `POST /logout` revoga a sessão (204). Gestão usa
+`GET/POST /contas/secretarios` e `PATCH /contas/secretarios/<id>`.
+Não há cadastro público de administrador nem rotas de ocorrências registradas.
+
+Mutações exigem JSON e `X-CSRF-Token` do mesmo cookie. Cookie HttpOnly e
+SameSite=Lax, Secure configurável para HTTPS, sem ID/perfil/hash. A conta ativa
+é recarregada em cada requisição. Respostas usam `Cache-Control: no-store`;
+corpos limitados a 16 KiB. A visão tem somente os cinco campos acima.
+Cadastro retorna 201; login/sessão/alteração retornam 200.
+Erros `{erro: str}`: 400 validação, 401 sem autenticação/falha login, 403 perfil
+ou CSRF, 404 conta ausente, 409 identificador duplicado, 413 corpo excessivo,
+415 conteúdo sem JSON, 503 persistência (mensagem genérica).
+O [guia de validação](desenvolvimento-luis.md) lista payloads e limitações.
+
+**Mapa de integração: ocorrências futuras; contas implementadas por opt-in.**
 
 | Fluxo | Caminho/método proposto | Serviço/controle | Dependências para fechar contrato |
 | --- | --- | --- | --- |
@@ -262,10 +326,10 @@ sem contexto de domínio, mais o endpoint estático padrão do Flask.
 | Editar/excluir | `POST /ocorrencias/<id>/editar`, `POST /ocorrencias/<id>/excluir` | Serviço + SECRETARIO | Campos, exclusão e proteção CSRF |
 | Status | `POST /ocorrencias/<id>/status` | Serviço + SECRETARIO | Contexto de confirmação/cancelamento e CSRF |
 | Vínculo | `POST /ocorrencias/vinculos` | `vincular`; ator a confirmar | Política P05 e CSRF |
-| Login/logout | `GET/POST /login`, `POST /logout` | Autenticação backend | Sessão, CSRF, erros e política P09/P10 |
-| Contas de secretários | `GET/POST /contas/secretarios` | Gestão + ADMINISTRADOR | Campos, ações, templates e CSRF |
+| Login/logout | `GET/POST /login`, `GET /sessao`, `POST /logout` | API experimental protegida | Validar P09/P10 e integrar telas |
+| Contas de secretários | `GET/POST /contas/secretarios`, `PATCH /contas/secretarios/<id>` | API experimental + ADMINISTRADOR | Validar P09/P10 e integrar telas |
 
-Não habilitar mutação via GET. Antes da integração, escolher formulários
+Para os fluxos futuros de ocorrências, não habilitar mutação via GET. Antes da integração, escolher formulários
 Jinja/redirect ou respostas JSON por fluxo; não há API REST definitiva.
 Contextos com nomes/campos exatos e mensagens ainda não foram definidos;
 Mariana usa fixtures visuais locais explicitamente fictícias até a revisão.
@@ -274,13 +338,14 @@ Proposta para formulários: erro validado reexibe tela com valores seguros;
 sucesso usa redirect após POST. Proposta para API, se adotada: 400 para
 validação, 401 sem autenticação, 403 sem permissão, 404 ID inexistente;
 falhas de I/O com resposta genérica e logs sem segredos. Não tratar todo
-`Exception` como erro de usuário. Nada desse tratamento HTTP está ativo.
+`Exception` como erro de usuário. Esse rascunho ainda não está ativo para ocorrências.
 
 ## Erros e revisão de mudanças
 
 `app/erros.py` oferece um vocabulário inicial: `ErroValidacao`,
 `OcorrenciaNaoEncontrada`, `PermissaoNegada`, `FalhaAutenticacao`,
-`ErroPersistencia`. Estruturas usam erros de índice/comparação, sem importar
+`ErroPersistencia`, mais `ContaNaoEncontrada` e `IdentificadorEmUso` para contas.
+Estruturas usam erros de índice/comparação, sem importar
 erros HTTP. As rotas futuras traduzem erros do serviço para a experiência
 escolhida, sem expor stack trace ou caminhos internos.
 

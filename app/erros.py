@@ -23,3 +23,11 @@ class FalhaAutenticacao(ErroAplicacao):
 
 class ErroPersistencia(ErroAplicacao):
     """Leitura ou gravação não concluída; não ocultar perda de dados."""
+
+
+class ContaNaoEncontrada(ErroAplicacao):
+    """Conta de secretário inexistente para a operação solicitada."""
+
+
+class IdentificadorEmUso(ErroValidacao):
+    """Identificador normalizado já pertence a outra conta."""

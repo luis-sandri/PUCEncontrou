@@ -10,6 +10,13 @@ As fronteiras, nomes de protocolos, mecanismos de injeção e sequência de
 gravação abaixo são **propostas técnicas v0 desta preparação**, a serem
 revisadas pelos responsáveis. Elas não acrescentam regras de negócio.
 
+**Implementação candidata de Luís (30/10/2026):** contas, SQLite, sessões e
+rotas JSON têm um módulo experimental separado por configuração, sem I/O na
+fábrica e sem implementar os módulos dos colegas. Veja o
+[guia de validação](desenvolvimento-luis.md) e o contrato executável de contas
+em [contratos](contratos.md). P09/P10 continuam pendentes; o ciclo futuro de
+ocorrências descrito abaixo não foi integrado.
+
 ```mermaid
 flowchart TD
     UI[Templates e interface] --> HTTP[Rotas Flask]

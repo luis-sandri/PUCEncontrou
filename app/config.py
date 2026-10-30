@@ -15,6 +15,10 @@ def carregar_configuracao() -> dict[str, object]:
     """Lê o ambiente a cada fábrica, evitando estado global entre testes."""
     return {
         "SECRET_KEY": os.environ.get("PUC_SECRET_KEY"),
+        "CONTAS_HABILITADAS": os.environ.get(
+            "PUC_CONTAS_HABILITADAS", "false"
+        ).lower() == "true",
+        "CONTAS_DURACAO_SESSAO_SEGUNDOS": 1800,
         "OCORRENCIAS_JSON": _caminho_local(
             "PUC_OCORRENCIAS_JSON", "instance/ocorrencias.json"
         ),

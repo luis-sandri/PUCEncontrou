@@ -6,6 +6,13 @@ Este documento registra o encaminhamento escolhido e as lacunas restantes,
 sem alterar as regras já aprovadas em [regras-negocio.md](regras-negocio.md).
 Não implementar como decisão final antes do alinhamento com a equipe.
 
+**Atualização técnica em 30/10/2026:** a branch de Luís contém uma implementação
+candidata de contas e HTTP para experimentar P09/P10, **desabilitada por padrão**.
+Ela não aprova as seleções de negócio. Campos, limites, sessão e JSON usados no
+protótipo estão em [contratos](contratos.md) e no
+[guia de validação](desenvolvimento-luis.md); aguardam revisão antes de integrar
+às telas ou habilitar na entrega. Demais pendências mantêm o estado anterior.
+
 **Convenção:** "seleção do solicitante" = proposta a submeter à equipe;
 "aprovado anteriormente" = regra já consolidada; "a definir" = decisão
 ainda aberta. Responsáveis indicados são sugestões de revisão, não
@@ -197,6 +204,12 @@ de mutações reais, sem bloquear os algoritmos isolados.
 
 ### P09 — Contas e alcance dos perfis
 
+**Protótipo para validação:** cadastro, edição, desativação e reset têm serviços,
+SQLite e testes isolados. Identificador genérico normalizado, nome, limites de
+senha, sessão de 30 minutos e revogação são escolhas candidatas documentadas,
+não decisões coletivas. Não há reativação ou recuperação pública. O bootstrap
+local explícito foi implementado sem conta padrão.
+
 **Seleção do solicitante:** o administrador deverá **cadastrar, editar,
 desativar e redefinir senhas** de contas de secretários. Essa lista de
 operações requer aprovação da equipe; não inclui exclusão física de
@@ -218,6 +231,11 @@ proteção de credenciais e processo inicial. Não gerar login/senha padrão.
 gestão administrativa, autenticação e rotas protegidas.
 
 ### P10 — Contrato HTTP e proteção antes das rotas
+
+**Protótipo para validação:** rotas JSON de contas podem ser habilitadas
+explicitamente, com CSRF, sessão revogável e autorização no serviço. Por padrão
+continuam ausentes. O módulo não expõe rotas de ocorrências. Integração Jinja,
+limitação de tentativas e configuração de implantação continuam abertas.
 
 Fechar payloads, contextos Jinja, filtros, paginação, mensagens, redirects,
 tratamento de erros e eventuais respostas JSON. Definir proteção CSRF para

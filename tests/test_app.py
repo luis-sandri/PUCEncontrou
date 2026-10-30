@@ -44,3 +44,52 @@ def test_configuracao_le_ambiente_em_cada_instancia(monkeypatch, tmp_path):
 def test_endpoints_de_negocio_ainda_nao_expostos(app):
     endpoints = {rule.endpoint for rule in app.url_map.iter_rules()}
     assert endpoints == {"static", "publicas.inicio"}
+
+
+def test_contas_desabilitadas_por_padrao(monkeypatch, tmp_path):
+    monkeypatch.delenv("PUC_CONTAS_HABILITADAS", raising=False)
+    instancia = create_app({
+        "SECRET_KEY": "chave-isolada-de-teste",
+        "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
+    })
+    assert instancia.config["CONTAS_HABILITADAS"] is False
+    assert "autenticacao" not in instancia.extensions
+    assert instancia.test_client().get("/login").status_code == 404
+    assert not instancia.config["CONTAS_SQLITE"].exists()
+
+
+def test_contas_habilitadas_aguardam_bootstrap_sem_criar_dados(tmp_path):
+    instancia = create_app({
+        "TESTING": True,
+        "SECRET_KEY": "chave-isolada-de-teste",
+        "CONTAS_HABILITADAS": True,
+        "CONTAS_SQLITE": tmp_path / "dados" / "contas.sqlite3",
+    })
+    assert not instancia.config["CONTAS_SQLITE"].exists()
+    client = instancia.test_client()
+    csrf = client.get("/login").get_json()["csrf_token"]
+    resposta = client.post(
+        "/login",
+        json={"identificador": "admin.fixture", "senha": "Senha-ficticia-123!"},
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert resposta.status_code == 503
+    assert not instancia.config["CONTAS_SQLITE"].parent.exists()
+
+
+def test_fabricas_contas_nao_compartilham_servicos_ou_dados(tmp_path):
+    from app.erros import ErroPersistencia
+
+    primeira, segunda = [create_app({
+        "SECRET_KEY": "chave-isolada-de-teste",
+        "CONTAS_HABILITADAS": True,
+        "CONTAS_SQLITE": tmp_path / nome / "contas.sqlite3",
+    }) for nome in ("primeira", "segunda")]
+    assert primeira.extensions["contas"] is not segunda.extensions["contas"]
+    primeira.extensions["autenticacao"].inicializar_administrador(
+        {"nome": "Administrador fictício", "identificador": "admin.fixture"},
+        "Senha-ficticia-123!",
+    )
+    with pytest.raises(ErroPersistencia):
+        segunda.extensions["autenticacao"].autenticar("admin.fixture", "Senha-ficticia-123!")
+    assert not segunda.config["CONTAS_SQLITE"].exists()

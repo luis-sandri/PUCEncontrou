@@ -3,10 +3,13 @@
 Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
-**Etapa atual:** aplicação Flask mínima executável, contratos preliminares
-e documentação de integração. Somente `GET /` e arquivos estáticos estão
-disponíveis. CRUD, estruturas acadêmicas, persistência, correspondência e
-autenticação serão implementados pelos responsáveis em etapas posteriores.
+**Etapa atual:** aplicação Flask mínima executável e contratos preliminares.
+Por padrão, somente `GET /` e arquivos estáticos estão disponíveis.
+Esta branch acrescenta o **backend experimental de Luís**: contas em SQLite,
+autenticação, sessões, gestão de secretários e inicialização por CLI, ativados
+explicitamente para revisão de P09/P10. Consulte o
+[guia de validação](docs/desenvolvimento-luis.md). Ocorrências, estruturas
+acadêmicas, JSON, consultas e correspondência continuam com seus responsáveis.
 
 ## Executar no Windows
 
@@ -47,9 +50,9 @@ Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Os testes atuais verificam renderização, inicialização, configuração,
-isolamento entre instâncias e ausência de endpoints de negócio. Os testes
-futuros de módulos ficam em `tests/unit/` e `tests/integration/`.
+Os testes verificam a base, o isolamento e a ausência de endpoints de negócio
+por padrão, além do módulo optativo de contas: SQLite temporário, autorização,
+CSRF, sessões, revogação, falhas transacionais e CLI sem senha na saída.
 Consulte [a organização dos testes](tests/README.md).
 
 O VS Code oferece extensões recomendadas, descoberta de pytest e execução
@@ -79,7 +82,9 @@ instance/                dados locais futuros, ignorados pelo Git
 As classes terminadas em `Porta` são `typing.Protocol`: descrevem
 assinaturas para consumidores e fakes, não executam funcionalidades e não
 devem ser instanciadas. Não representam a implementação acadêmica de Lista
-ou AVL. Não há composição dos serviços de negócio na fábrica ainda.
+ou AVL. Não há composição dos serviços de ocorrências na fábrica. Os serviços
+concretos de contas só são compostos com `PUC_CONTAS_HABILITADAS=true`; nem essa
+composição cria banco ou administrador. A CLI explícita prepara o SQLite.
 
 ## Começar o trabalho em equipe
 
@@ -108,6 +113,11 @@ aprovação coletiva**, e os efeitos e contratos pendentes constam em
 [pendências](docs/pendencias.md). Não há entrevistas ou dados reais incluídos nesta base.
 Contas, hashes, arquivos locais e segredos não devem entrar no Git. Nenhuma
 alteração de Jira, publicação, commit ou push faz parte desta preparação.
+
+Na branch de Luís, os campos de conta e o contrato HTTP têm uma implementação
+experimental isolada para avaliação. Isso não altera o estado das decisões
+coletivas em [pendências](docs/pendencias.md). As telas de autenticação e gestão
+continuam sob coordenação de Mariana; o módulo entrega respostas JSON.
 
 ## Referências técnicas
 
