@@ -16,6 +16,23 @@ formulários Jinja e sessão Flask. P09/P10 de contas foram definidos por Luís
 nesta conversa; a revisão coletiva continua pendente. A configuração explícita
 permite testar o módulo. Demais contratos de ocorrências permanecem v0.
 
+## Alinhamento com SCRUM-8/9 — 31/10/2026
+
+Por solicitação de Luís, contas passam a JSON e as regras conflitantes de
+ocorrências seguem o [contrato de Marcelo](https://github.com/luis-sandri/PUCEncontrou/blob/03fb6fb23b5662587cada2c0b6caf263ef0d7303/docs/scrum-8.md).
+Modelo, codec, lotes e núcleo estão disponíveis nessa branch; esta adequação
+**não importa suas implementações** nem registra rotas de ocorrência.
+O serviço protegido futuro deve envolver o núcleo, validar autorizações e
+uploads e só então expor operações. A Lista manual e sua integração de produção
+continuam com os respectivos responsáveis.
+
+Campos mínimos do modelo de Marcelo: nome, categoria, data da ocorrência,
+local e referência de foto, com foto obrigatória em ambos os tipos; descrição
+e cor opcionais. Guarda é exclusiva de ENCONTRADO. Vínculo é 1:1 entre tipos
+opostos abertos, com resolução/reabertura conjuntas. Exclusão física limpa o
+vínculo no parceiro sem alterar seus demais dados/status. Cancelamento só de
+ABERTO isolado; justificativa e propagação continuam pendentes.
+
 ## Convenções e composição propostas
 
 - IDs são strings opacas e estáveis; consumidor não interpreta nem usa posição
@@ -31,7 +48,7 @@ permite testar o módulo. Demais contratos de ocorrências permanecem v0.
 - Serviços recebem suas dependências por construtor; a fábrica futura registra
   as instâncias. Rotas não criam serviços, não importam uma app global e não
   instanciam estruturas por requisição.
-- `ator` vem da autenticação do backend e da conta carregada no SQLite.
+- `ator` vem da autenticação do backend e da conta carregada no JSON de contas.
   Não confiar em ID/perfil enviados pelo navegador. Sem ator válido, negar
   mutações protegidas. O serviço valida permissão além da proteção da rota.
 - Dados públicos são projetados em DTO/contexto de template; objetos do modelo,
@@ -65,21 +82,23 @@ Código: `app/models/ocorrencia.py`.
 | Status | `StatusOcorrencia.ABERTO`, `.RESOLVIDO`, `.CANCELADO` | Aprovado |
 | Visão mínima | `OcorrenciaPorta.id: str`, `.tipo: TipoOcorrencia`, `.status: StatusOcorrencia` | Propriedades de leitura propostas |
 | Novo registro | Começa `ABERTO`; ID gerado no backend | Status aprovado; estratégia de ID pendente |
-| Modelo concreto | Classe `Ocorrencia`, campos e validações | A implementar após P01/P02 |
+| Modelo concreto | Classe `Ocorrencia`, campos e validações | Disponível na branch SCRUM-8; não importada nesta adequação |
 
-Assinaturas de codec/modelo para discussão com Matheus, **não implementadas**:
+Assinaturas de codec/modelo implementadas na branch SCRUM-8; arquivo com Matheus:
 
 ```python
 Ocorrencia.criar(dados: Mapping[str, object]) -> Ocorrencia
-Ocorrencia.para_registro() -> Mapping[str, object]
+ocorrencia.corrigir(dados: Mapping[str, object]) -> Ocorrencia
+ocorrencia.para_registro() -> dict[str, object]
 Ocorrencia.de_registro(registro: Mapping[str, object]) -> Ocorrencia
 ```
 
 O codec não deve gerar novo ID, forçar `ABERTO` ao recarregar, perder vínculos
 ou confundir os dois locais. A criação não é um atalho para alterar status.
-Campos de data, descrição, categoria, cor, contato e vínculos ainda não estão
-no protocolo porque obrigatoriedade, representação e exposição dependem da
-equipe. Validação não deve ser distribuída em seis versões incompatíveis.
+O protocolo de leitura continua mínimo. O modelo de Marcelo já define data,
+descrição, categoria, cor, foto, guarda e vínculos conforme o guia SCRUM-8.
+Dados de contato e exposição pública seguem em revisão. Validação não deve
+ser distribuída em seis versões incompatíveis.
 
 ## Lista Dinâmica — Marcelo
 
@@ -189,11 +208,11 @@ vincular(perdido_id: str, encontrado_id: str, *, ator: ContaAdministrativaPorta)
 - `contexto` reserva confirmação presencial/justificativa; conteúdo e forma
   de registrar confirmação ainda precisam ser definidos. Receber um boolean
   do cliente não dispensa identidade, autorização e ação do secretário.
-- `vincular` não confirma devolução nem altera status automaticamente. O
-  ator obrigatório é uma proposta conservadora; quem pode vincular precisa
-  de aprovação em P05 antes de expor endpoint ou implementar a autorização.
-- `excluir` esconde a estratégia física/lógica do consumidor; efeito em
-  consultas, arquivo, índice e vínculos aguarda P04/P05.
+- `vincular` não confirma devolução nem altera status automaticamente. A
+  autorização de secretário deve ser validada no serviço protegido, conforme
+  o desenho SCRUM-8; o núcleo interno não pode ser exposto diretamente.
+- `excluir` segue exclusão física e limpa o vínculo no parceiro sem alterar
+  seus demais dados/status. Integração com Lista/AVL/JSON e fotos continua pendente.
 
 O serviço é o único coordenador de mutações da Lista, índice e snapshot.
 Não permitir edição direta de objetos retornados para contornar regras.
@@ -215,19 +234,19 @@ elegibilidade, limite, pesos e valores ausentes precisam de P03. Não há
 `5`, `60` ou pesos fixos no código. A política deve ser determinística,
 com testes reprodutíveis e sem qualquer provedor de IA.
 
-## Contas, SQLite e autenticação — Luís
+## Contas JSON e autenticação — Luís
 
-Contrato atualizado conforme escolhas de Luís em P09/P10, para revisão da equipe.
-`ContaAdministrativa` e `CredenciaisConta` são dataclasses imutáveis. A visão
-administrativa e `ContaAdministrativaPorta` contêm `id: str`, `perfil: Perfil`,
-`nome: str`, `identificador: str`, `ativa: bool`, `versao_sessao: int`.
-O identificador é o e-mail `@pucpr.edu.br`. A versão é um contador interno,
-**não enviado aos templates**. Rotas projetam somente os outros cinco campos.
-A credencial privada acrescenta `senha_hash: str` (omitido do repr) e
-`para_visao() -> ContaAdministrativa`.
+Contrato alinhado à persistência de SCRUM-8 em 31/10. As escolhas de nome,
+e-mail, gestão e sessão de P09/P10 permanecem iguais. `ContaAdministrativa` e
+`CredenciaisConta` são imutáveis. Visão e `ContaAdministrativaPorta`: `id: str`,
+`perfil: Perfil`, `nome: str`, `identificador: str`, `ativa: bool` e contador
+interno `versao_sessao: int`. Credenciais acrescentam `senha_hash: str` (fora do
+repr) e `para_visao() -> ContaAdministrativa`. Templates recebem somente os
+cinco campos administrativos, sem hash ou contador.
 
-`RepositorioContasSQLite(caminho: Path | str)` não faz I/O no construtor.
-O protocolo `RepositorioContasPorta` e a implementação oferecem:
+Código: protocolo em `app/repositories/contas.py`, concreto
+`RepositorioContasJSON(caminho: Path | str)` em `app/repositories/json_contas.py`.
+O construtor não faz I/O. O protocolo oferece:
 
 ```python
 inicializar() -> None
@@ -238,21 +257,24 @@ salvar_secretario(dados: Mapping[str, object], *, senha_hash: str) -> ContaAdmin
 listar_secretarios() -> list[ContaAdministrativa]
 atualizar_secretario(conta_id: str, dados: Mapping[str, object], *, senha_hash: str | None = None) -> ContaAdministrativa
 recuperar_administrador(identificador: str, *, senha_hash: str) -> ContaAdministrativa
+importar_legado_sqlite(origem: Path | str) -> int
 ```
 
-O concreto retorna `CredenciaisConta`/`ContaAdministrativa` onde a porta descreve
-essas visões. Mantém IDs UUID, e-mail único, SQL parametrizado e transações de
-escrita. `inicializar` cria o esquema v2 ou migra explicitamente v1 para v2,
-preservando contas, IDs e hashes, acrescentando o contador e removendo a tabela
-`sessoes` antiga. Consultas/fábrica não migram ou criam arquivos. Banco desconhecido
-ou incompatível é recusado sem sobrescrita. A migração exige a CLI; ver guia.
+O concreto devolve `CredenciaisConta`/`ContaAdministrativa` onde a porta descreve
+essas visões. Arquivo UTF-8 separado das ocorrências, com envelope
+`{"versao": 1, "contas": [...]}`. Cada registro contém somente os seis campos da
+conta e `senha_hash`; perfil como texto. IDs UUID e e-mails normalizados são
+únicos; no máximo um administrador inicial. Arquivo ausente, inválido, registros
+inconsistentes ou versão desconhecida geram `ErroPersistencia`, sem substituição
+silenciosa por vazio. A inicialização explícita cria arquivo vazio ou valida o
+existente sem regravá-lo. Consulta/fábrica não criam arquivos.
 
-Criação recebe `nome` e `identificador`; atualização recebe `nome`, `identificador`
-e/ou `ativa`, com senha já em hash. Só atualiza secretário. Mudança de e-mail,
-ativação/desativação ou reset incrementa `versao_sessao` na mesma transação da
-alteração. Falha desfaz dados e contador juntos. Editar só nome preserva a sessão.
-Bootstrap cria somente o primeiro administrador. Recuperação local mantém seu ID
-e nome e altera e-mail/senha, reativa a conta e incrementa o contador.
+Escritas geram snapshot em temporário no mesmo diretório e usam `os.replace`.
+Senha/situação/e-mail e contador são gravados juntos; falha preserva o arquivo
+anterior. Lock coordena requisições da mesma instância. Usar **um processo por
+arquivo** e executar CLI com servidor parado; não há coordenação entre processos.
+O adaptador não mantém cache. Seu JSON de contas não define nem implementa o
+arquivo de ocorrências de Matheus, a Lista manual ou a AVL.
 
 ```python
 # ServicoContas(repositorio: RepositorioContasPorta)
@@ -264,34 +286,41 @@ gerenciar_secretario(conta_id: str, alteracoes: Mapping[str, object], *, ator: C
 # ServicoAutenticacao(repositorio: RepositorioContasPorta)
 autenticar(identificador: str, senha: str) -> ContaAdministrativa
 obter_sessao(conta_id: str, versao_sessao: int) -> ContaAdministrativa | None
-atualizar_banco() -> None
+preparar_arquivo() -> None
 inicializar_administrador(dados: Mapping[str, object], senha: str) -> ContaAdministrativa
 recuperar_administrador(identificador: str, senha: str) -> ContaAdministrativa
+importar_contas_legadas(origem: str) -> int
 ```
 
 As portas dos serviços mantêm retornos `ContaAdministrativaPorta`;
 `GestaoContasPorta.listar_secretarios` usa `Sequence[ContaAdministrativaPorta]`.
-Preparação do banco, bootstrap e recuperação são métodos concretos da CLI local,
-sem rota pública. Os antigos `iniciar_sessao`, `encerrar_sessao`, tokens opacos e
-operações de tabela de sessões foram retirados; consumidores e testes foram adaptados.
+Preparação, bootstrap, recuperação e importação são exclusivos da CLI local.
+O antigo `atualizar_banco()` foi substituído por `preparar_arquivo()`;
+configuração agora é `CONTAS_JSON` / `PUC_CONTAS_JSON`, padrão
+`instance/contas.json`. `CONTAS_SQLITE` não é mais usado pelo aplicativo.
 
-Gestão recarrega o ator por ID e exige administrador ativo no banco. Não confia
-em perfil recebido; secretário não gerencia contas e administrador não ganha
-poder de secretário. Alterações aceitam `nome`, `identificador`, `ativa: bool`
-e/ou `senha`; não há exclusão de conta, gestão de administradores pelo navegador
-ou mudança de credenciais próprias. Campos extras são recusados.
+Importação abre o SQLite legado v1/v2 somente para leitura, preserva IDs,
+hashes, nomes, identificadores e situação, e grava um JSON novo. Recusa destino
+existente, fonte incompatível ou registros inválidos. Não altera/apaga a origem.
+Para login genérico legado, ajustar e-mail pela recuperação local ou edição de
+secretário. Não há migração automática durante requisições.
 
-Nome tem 1–120 caracteres após `strip`, sem controles. E-mail é normalizado com
-`strip`/`casefold`, tem até 120 caracteres, parte local usual e domínio exatamente
-`pucpr.edu.br`. Senha tem 12–128 caracteres Unicode codificáveis em UTF-8, sem
-normalização; hash/verificação são Werkzeug. Senha não entra em DTO, template,
-log ou configuração. Falha de login é genérica para conta ausente/inativa ou senha
-incorreta. Limites técnicos permanecem sujeitos à revisão da equipe.
+Gestão exige administrador ativo recarregado pelo ID. Só modifica secretários;
+não confia em perfil recebido. Campos permitidos: `nome`, `identificador`,
+`ativa: bool` e/ou `senha`; não há exclusão, gestão pública de administradores
+ou alteração de credenciais próprias. Mudança de e-mail, situação ou senha
+incrementa o contador junto aos dados; renomear preserva a versão.
 
-`CONTAS_HABILITADAS` (ambiente `PUC_CONTAS_HABILITADAS=true`) continua falso por
-padrão. Quando habilitado, a fábrica compõe serviços concretos em
-`app.extensions['autenticacao']` e `['contas']`, registra CLI e formulários.
-O prazo `CONTAS_DURACAO_SESSAO_SEGUNDOS` é inteiro positivo, padrão 1800.
+Nome tem 1–120 caracteres após `strip`, sem controles. E-mail institucional
+`@pucpr.edu.br` tem até 120 caracteres e é normalizado com `strip`/`casefold`.
+Senha tem 12–128 caracteres Unicode válidos, sem normalização; hash/verificação
+Werkzeug. Falha de login é genérica. Nenhuma senha em texto vai para arquivo,
+DTO, template ou log. Limites técnicos continuam sujeitos à revisão da equipe.
+
+`CONTAS_HABILITADAS` / `PUC_CONTAS_HABILITADAS=true` permanece falso por padrão.
+Quando habilitado, a fábrica compõe serviços em `app.extensions['autenticacao']`
+e `['contas']`, sem instanciar protocolos ou criar dados. Duração de sessão
+configurada por `CONTAS_DURACAO_SESSAO_SEGUNDOS`, inteiro positivo, padrão 1800.
 
 ## HTTP e Jinja2 — Luís e Mariana
 

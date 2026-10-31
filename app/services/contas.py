@@ -13,7 +13,7 @@ from werkzeug.security import generate_password_hash
 
 from app.erros import ContaNaoEncontrada, ErroValidacao, PermissaoNegada
 from app.models.conta import ContaAdministrativa, ContaAdministrativaPorta, Perfil
-from app.repositories.sqlite_contas import RepositorioContasPorta
+from app.repositories.contas import RepositorioContasPorta
 
 
 def _tem_controle(valor: str) -> bool:

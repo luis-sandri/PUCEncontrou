@@ -22,8 +22,8 @@ def carregar_configuracao() -> dict[str, object]:
         "OCORRENCIAS_JSON": _caminho_local(
             "PUC_OCORRENCIAS_JSON", "instance/ocorrencias.json"
         ),
-        "CONTAS_SQLITE": _caminho_local(
-            "PUC_CONTAS_SQLITE", "instance/contas.sqlite3"
+        "CONTAS_JSON": _caminho_local(
+            "PUC_CONTAS_JSON", "instance/contas.json"
         ),
         "SESSION_COOKIE_HTTPONLY": True,
         "SESSION_COOKIE_SAMESITE": "Lax",

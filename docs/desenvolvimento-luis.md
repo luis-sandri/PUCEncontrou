@@ -6,7 +6,7 @@ O domínio **`@pucpr.edu.br`** foi confirmado expressamente. O registro em
 [pendências](pendencias.md) distingue essas definições da revisão coletiva.
 
 O foco acadêmico continua sendo a Lista Dinâmica baseada em array e a AVL
-manuais. Contas e autenticação dão suporte à aplicação com Flask/Jinja e SQLite.
+manuais. Contas e autenticação dão suporte à aplicação com Flask/Jinja e JSON local.
 
 ## O que está disponível
 
@@ -15,8 +15,8 @@ manuais. Contas e autenticação dão suporte à aplicação com Flask/Jinja e S
 - Sessão nativa do Flask, duração absoluta de 30 minutos e consulta da conta no
   backend. Contador na conta invalida acessos após mudança de credenciais/situação.
 - Formulários com CSRF, validação e mensagens; POST bem-sucedido redireciona.
-- Senhas com hash Werkzeug, SQL parametrizado e dados locais fora do Git.
-- CLI para criar o primeiro administrador, atualizar banco e recuperar o acesso local.
+- Senhas com hash Werkzeug, JSON validado e dados locais fora do Git.
+- CLI para criar o primeiro administrador, preparar JSON, importar legado e recuperar o acesso local.
 
 A fábrica não acessa persistência. O módulo continua habilitado explicitamente;
 não compõe ocorrências, Lista, AVL, JSON ou correspondência. Templates mínimos
@@ -53,7 +53,7 @@ PY
 O modo `x` recusa sobrescrever uma configuração existente. Para experimentar o
 módulo, altere **no `.env` local** `PUC_CONTAS_HABILITADAS=false` para `true`.
 Mantenha `PUC_SESSION_COOKIE_SECURE=false` somente no desenvolvimento HTTP local;
-HTTPS exige `true`. Não coloque `.env`, SQLite ou credenciais no Git.
+HTTPS exige `true`. Não coloque `.env`, JSON de contas ou credenciais no Git.
 
 ```sh
 .venv/bin/python -m flask --app app contas inicializar
@@ -67,31 +67,53 @@ precisam do banco respondem 503, sem criar arquivo durante requisições.
 
 No Windows, use `.\.venv\Scripts\python.exe` nos comandos conforme o README.
 
-## Atualizar um banco da versão anterior
+## Alinhamento de armazenamento — 31/10/2026
 
-A nova versão usa esquema SQLite **v2**, sem tabela de sessões. Se já criou um
-banco no primeiro protótipo (v1), execute explicitamente, com a aplicação parada:
+Por solicitação de Luís, contas passam a JSON, seguindo a regra registrada por
+Marcelo. O arquivo é **separado** do JSON de ocorrências de Matheus. Em `.env`,
+use `PUC_CONTAS_JSON=instance/contas.json`; `PUC_CONTAS_SQLITE` não é mais usado.
+Nome, e-mail, formulários e permissões permanecem iguais.
+
+Para uma instalação nova, `contas inicializar` prepara o JSON e cria somente o
+primeiro administrador. Para apenas preparar/validar o arquivo, sem criar conta:
 
 ```sh
-.venv/bin/python -m flask --app app contas atualizar-banco
+.venv/bin/python -m flask --app app contas preparar-arquivo
 ```
 
-O comando preserva contas, IDs e hashes, adiciona o contador de sessão e remove
-somente os registros/tabela de sessões antigos. A fábrica e as requisições não
-fazem migrações. Cookies antigos deixam de autenticar e será necessário entrar
-novamente. Banco desconhecido não é sobrescrito.
+O JSON tem envelope `{"versao": 1, "contas": [...]}`. Cada registro guarda ID,
+perfil, nome, e-mail, situação, hash e contador de sessão; nunca senha em texto.
+Arquivo ausente/inválido causa erro explícito, sem substituição por vazio durante
+leitura. Escrita usa temporário no mesmo diretório e substituição atômica.
 
-A migração preserva identificadores antigos. Se seu administrador foi criado
-com login genérico, adapte o acesso para o e-mail institucional pela CLI:
+Use **um processo da aplicação por arquivo**. O lock coordena requisições da
+mesma instância; a CLI deve rodar com o servidor parado. Não usar vários workers
+ou executar mudanças da CLI enquanto o servidor grava o mesmo JSON.
+
+## Importar contas do protótipo SQLite
+
+Se já criou contas em SQLite v1 ou v2, **antes de criar o JSON de destino**, com
+o servidor parado, execute:
+
+```sh
+.venv/bin/python -m flask --app app contas importar-sqlite instance/contas.sqlite3
+```
+
+A importação é explícita: abre a origem somente para leitura, preserva contas,
+IDs, hashes, nomes, situação e contador, e grava um JSON novo em `PUC_CONTAS_JSON`.
+Não altera ou apaga o SQLite. Destino existente, fonte incompatível ou registros
+inválidos impedem a importação. A aplicação não converte dados automaticamente.
+
+Logins genéricos antigos são preservados no arquivo, mas o login exige e-mail
+institucional. Para adaptar o administrador, ou recuperar seu acesso:
 
 ```sh
 .venv/bin/python -m flask --app app contas recuperar-administrador
 ```
 
-Esse comando pede confirmação, e-mail e nova senha oculta/confirmada. Mantém o
-mesmo administrador, não cria outro e invalida seus acessos anteriores. É uma
-operação local do responsável pelo banco; não existe recuperação pública.
-Secretários com login antigo podem ter o e-mail corrigido pela tela administrativa.
+O comando pede confirmação, e-mail e nova senha oculta/confirmada. Mantém ID e
+nome do administrador e invalida seus acessos anteriores. Não cria outro
+administrador. Secretários antigos podem ter o e-mail corrigido na tela de gestão.
 
 ## Testar no navegador
 
@@ -121,7 +143,7 @@ O [contrato HTTP](contratos.md) descreve caminhos, campos e códigos de resposta
 ```
 
 Os testes usam somente `tmp_path`, contas fictícias e cliente Flask. Verificam
-CLI, migração v1→v2 preservando contas, recuperação local, persistência após
+CLI, importação do legado SQLite para JSON sem alterar a origem, recuperação local, persistência após
 reabertura, formulários, campos extras, CSRF, autorização, domínio de e-mail,
 expiração, reset/desativação/reativação e rollback de dados + contador em falha.
 

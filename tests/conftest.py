@@ -13,7 +13,7 @@ def app(tmp_path):
             "SECRET_KEY": "chave-exclusiva-de-teste-sem-uso-real",
             "CONTAS_HABILITADAS": False,
             "OCORRENCIAS_JSON": tmp_path / "ocorrencias.json",
-            "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
+            "CONTAS_JSON": tmp_path / "contas.json",
         }
     )
 

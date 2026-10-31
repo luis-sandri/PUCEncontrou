@@ -1,4 +1,4 @@
-"""Formulários reais, sessão Flask e SQLite temporário do módulo de Luís."""
+"""Formulários reais, sessão Flask e JSON temporário do módulo de Luís."""
 
 from html.parser import HTMLParser
 
@@ -36,7 +36,7 @@ class Pagina(HTMLParser):
 def contas_app(tmp_path):
     app = create_app({
         "TESTING": True, "SECRET_KEY": "chave-isolada-dos-testes-de-contas",
-        "CONTAS_HABILITADAS": True, "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
+        "CONTAS_HABILITADAS": True, "CONTAS_JSON": tmp_path / "contas.json",
         "OCORRENCIAS_JSON": tmp_path / "ocorrencias.json", "SESSION_COOKIE_SECURE": False,
     })
     resultado = app.test_cli_runner().invoke(
@@ -211,12 +211,12 @@ def test_persistencia_indisponivel_nao_expoe_detalhes(contas_app, monkeypatch):
     client = contas_app.test_client()
     _entrar(client)
     def falhar(*, ator):
-        raise ErroPersistencia("/pasta/privada/banco.sqlite3: SQL interno")
+        raise ErroPersistencia("/pasta/privada/contas.json: detalhe interno")
     monkeypatch.setattr(contas_app.extensions["contas"], "listar_secretarios", falhar)
     resposta = client.get("/contas/secretarios")
     assert resposta.status_code == 503
     assert "privada" not in resposta.get_data(as_text=True)
-    assert "SQL interno" not in resposta.get_data(as_text=True)
+    assert "detalhe interno" not in resposta.get_data(as_text=True)
 
 
 def test_corpo_excessivo_e_contrato_html(contas_app):

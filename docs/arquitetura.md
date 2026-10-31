@@ -1,16 +1,26 @@
 # Arquitetura e desenvolvimento em paralelo
 
+## Alinhamento de persistência e regras — 31/10/2026
+
+Luís solicitou adotar somente os pontos conflitantes das branches de Marcelo:
+contas em JSON (arquivo de Luís separado das ocorrências de Matheus), foto
+obrigatória e regras de campos/vínculos/exclusão registradas em SCRUM-8.
+O código de modelo, núcleo, Lista e AVL dos colegas não foi importado nesta
+adequação. Os contratos executáveis desses módulos continuam nas respectivas
+branches; esta branch fornece contas e registra o alinhamento em
+[regras](regras-negocio.md) e [pendências](pendencias.md).
+
 ## Base informada e organização técnica
 
 A arquitetura aprovada é um monólito web em camadas, com Flask, Jinja2,
 HTML/CSS/JavaScript e Bootstrap 5. Ocorrências persistem em JSON, contas
-administrativas em SQLite; Lista Dinâmica e AVL são manuais.
+administrativas em JSON local separado; Lista Dinâmica e AVL são manuais.
 
 As fronteiras, nomes de protocolos, mecanismos de injeção e sequência de
 gravação abaixo são **propostas técnicas v0 desta preparação**, a serem
 revisadas pelos responsáveis. Elas não acrescentam regras de negócio.
 
-**Implementação candidata de Luís (30/10/2026):** contas, SQLite, sessões e
+**Implementação candidata de Luís (30/10/2026):** contas, JSON, sessões e
 formulários Jinja têm um módulo separado por configuração, sem I/O na
 fábrica e sem implementar os módulos dos colegas. Veja o
 [guia de validação](desenvolvimento-luis.md) e o contrato executável de contas
@@ -33,8 +43,8 @@ flowchart TD
     SO --> JR[Repositório JSON]
     JR --> JF[Arquivo JSON local]
     SO --> AV
-    SA --> SR[Repositório SQLite]
-    SR --> DB[Contas locais]
+    SA --> SR[Repositório JSON de contas]
+    SR --> DB[Arquivo local de contas]
 ```
 
 Modelos e erros são compartilhados entre os módulos de domínio. Eles não
@@ -69,7 +79,7 @@ esconder o custo na apresentação acadêmica.
 Inicialização futura: JSON -> validação/decodificação -> Lista manual ->
 reconstrução da AVL com chave de data aprovada -> exposição dos serviços.
 A AVL é derivada e não deve ser serializada com nós e ponteiros no JSON.
-O SQLite de contas tem inicialização separada e não armazena ocorrências.
+O JSON de contas tem inicialização separada e não armazena ocorrências.
 
 Em uma mutação, o serviço valida dados, ator e regras; prepara a alteração
 incluindo pares vinculados; mantém Lista, índice e snapshot coerentes.
@@ -94,7 +104,7 @@ esta base ainda não implementa locks, escrita ou recuperação.
 | Leandro | `structures/avl.py`, `services/consultas.py`, testes de unidade | Marcelo e Matheus revisam IDs/data e reconstrução |
 | Matheus | `repositories/json_ocorrencias.py`, `services/inicializacao.py`, testes de persistência | Marcelo e Leandro revisam integração; Luís registra composição |
 | André | `services/correspondencias.py`, `tests/integration/` | Modelo e políticas aprovadas; todos participam de testes entre módulos |
-| Luís | fábrica, configuração, erros, rotas, contas, autenticação, SQLite, scripts | Coordena contratos e composição; Mariana integra HTTP |
+| Luís | fábrica, configuração, erros, rotas, contas, autenticação, JSON de contas, scripts | Coordena contratos e composição; Mariana integra HTTP |
 
 As pastas são por camada; propriedade de arquivos é por módulo. Não criar
 uma pasta de aplicação por pessoa nem seis fábricas Flask concorrentes.
@@ -111,7 +121,7 @@ fluxos dependem especialmente de P01–P05 em [pendências](pendencias.md).
 O contrato HTTP é um rascunho documentado; não há endpoints fictícios ativos.
 Não há teste de conformidade estática ou de integração funcional dos protocolos
 de ocorrências nesta entrega. O módulo de contas possui seus próprios testes
-de integração com SQLite e formulários. Sua aceitação exige revisão e testes pelos responsáveis.
+de integração com JSON e formulários. Sua aceitação exige revisão e testes pelos responsáveis.
 
 ## Arquivos com risco de conflito no Git
 
@@ -138,7 +148,7 @@ Nenhum fluxo GitHub ou regra de proteção foi aplicado automaticamente.
    DTOs e assinaturas, sem considerar esta base uma aprovação da equipe.
 2. Em paralelo: Marcelo desenvolve Lista/modelo; Leandro AVL com pares
    sintéticos; Matheus repositório com codec provisório isolado; Mariana telas
-   com dados fictícios; Luís autenticação/SQLite e rotas com fakes; André
+   com dados fictícios; Luís autenticação/JSON de contas e rotas com fakes; André
    cenários integrados e correspondência parametrizável, sem pontuação fixa.
 3. Primeira integração: Matheus + Marcelo + Leandro fecham carregamento e
    reconstrução; Marcelo + Luís integram cadastro/consulta; André testa
@@ -176,4 +186,4 @@ a integração e a organização dos testes.
 | Leandro | AVL e consultas temporais | IDs/modelo de Marcelo e extrator de data na integração | Datas duplicadas; chave temporal indefinida; retorno de nós; custo ao resolver IDs | Testar AVL isolada com `(date, id)`; retornar IDs; revisar semântica de período e custo final |
 | Matheus | JSON e integração com estruturas | Codec de Marcelo, contratos Lista/AVL e fábrica de Luís | Esquema prematuro; perda de dados; importar nós; gravação concorrente | Separar I/O de inicialização; revisar codec; snapshot atômico e testes de falha/reinício |
 | André | Correspondências e testes integrados | Leitura de ocorrências e critérios aprovados | Fixar propostas como regras; mutar status; depender de todos prontos | Fakes locais e cenários antecipados; algoritmo determinístico configurável; integrar por trilhas |
-| Luís | Flask, autenticação, rotas e integração | Serviços dos colegas; layout de Mariana; SQLite próprio | Gargalo na fábrica; ciclos; poder de admin presumido; endpoint antes da proteção | Centralizar composição com injeção; negar operações sem permissão; integrar PRs pequenas e testar backend |
+| Luís | Flask, autenticação, rotas e integração | Serviços dos colegas; layout de Mariana; JSON de contas próprio | Gargalo na fábrica; ciclos; poder de admin presumido; endpoint antes da proteção | Centralizar composição com injeção; negar operações sem permissão; integrar PRs pequenas e testar backend |

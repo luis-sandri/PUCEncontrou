@@ -15,7 +15,7 @@ def contas_cli():
 @contas_cli.command("inicializar")
 @with_appcontext
 def inicializar():
-    """Prepara o SQLite e cria somente o primeiro administrador."""
+    """Prepara o JSON de contas e cria somente o primeiro administrador."""
     nome = click.prompt("Nome")
     identificador = click.prompt("E-mail institucional (@pucpr.edu.br)")
     senha = click.prompt("Senha", hide_input=True, confirmation_prompt=True)
@@ -25,7 +25,7 @@ def inicializar():
         )
     except ErroAplicacao as exc:
         mensagem = (
-            "Não foi possível inicializar o banco de contas."
+            "Não foi possível inicializar o arquivo de contas."
             if isinstance(exc, ErroPersistencia)
             else str(exc)
         )
@@ -33,15 +33,15 @@ def inicializar():
     click.echo("Administrador inicial criado.")
 
 
-@contas_cli.command("atualizar-banco")
+@contas_cli.command("preparar-arquivo")
 @with_appcontext
-def atualizar_banco():
-    """Prepara/migra o banco, preservando contas; encerra sessões do protótipo v1."""
+def preparar_arquivo():
+    """Prepara um arquivo de contas vazio; valida o existente sem sobrescrever."""
     try:
-        current_app.extensions["autenticacao"].atualizar_banco()
+        current_app.extensions["autenticacao"].preparar_arquivo()
     except ErroAplicacao:
-        raise click.ClickException("Não foi possível atualizar o banco de contas.") from None
-    click.echo("Banco de contas atualizado.")
+        raise click.ClickException("Não foi possível preparar o arquivo de contas.") from None
+    click.echo("Arquivo de contas preparado.")
 
 
 @contas_cli.command("recuperar-administrador")
@@ -54,6 +54,19 @@ def recuperar_administrador():
     try:
         current_app.extensions["autenticacao"].recuperar_administrador(identificador, senha)
     except ErroAplicacao as exc:
-        mensagem = "Banco de contas indisponível." if isinstance(exc, ErroPersistencia) else str(exc)
+        mensagem = "Arquivo de contas indisponível." if isinstance(exc, ErroPersistencia) else str(exc)
         raise click.ClickException(mensagem) from None
     click.echo("Acesso do administrador recuperado; faça login novamente.")
+
+
+@contas_cli.command("importar-sqlite")
+@click.argument("origem", type=click.Path(exists=True, dir_okay=False))
+@with_appcontext
+def importar_sqlite(origem):
+    """Importa contas do protótipo anterior sem modificar a origem ou JSON existente."""
+    try:
+        quantidade = current_app.extensions["autenticacao"].importar_contas_legadas(origem)
+    except ErroAplicacao as exc:
+        mensagem = "Não foi possível importar o legado de contas." if isinstance(exc, ErroPersistencia) else str(exc)
+        raise click.ClickException(mensagem) from None
+    click.echo(f"{quantidade} conta(s) importada(s) para JSON.")

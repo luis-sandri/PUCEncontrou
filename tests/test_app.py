@@ -14,7 +14,7 @@ def test_inicio_renderiza_template(client):
 
 def test_criacao_nao_acessa_persistencia(app):
     assert not app.config["OCORRENCIAS_JSON"].exists()
-    assert not app.config["CONTAS_SQLITE"].exists()
+    assert not app.config["CONTAS_JSON"].exists()
 
 
 def test_fabrica_cria_instancias_independentes():
@@ -50,12 +50,12 @@ def test_contas_desabilitadas_por_padrao(monkeypatch, tmp_path):
     monkeypatch.delenv("PUC_CONTAS_HABILITADAS", raising=False)
     instancia = create_app({
         "SECRET_KEY": "chave-isolada-de-teste",
-        "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
+        "CONTAS_JSON": tmp_path / "contas.json",
     })
     assert instancia.config["CONTAS_HABILITADAS"] is False
     assert "autenticacao" not in instancia.extensions
     assert instancia.test_client().get("/login").status_code == 404
-    assert not instancia.config["CONTAS_SQLITE"].exists()
+    assert not instancia.config["CONTAS_JSON"].exists()
 
 
 def test_contas_habilitadas_aguardam_bootstrap_sem_criar_dados(tmp_path):
@@ -63,9 +63,9 @@ def test_contas_habilitadas_aguardam_bootstrap_sem_criar_dados(tmp_path):
         "TESTING": True,
         "SECRET_KEY": "chave-isolada-de-teste",
         "CONTAS_HABILITADAS": True,
-        "CONTAS_SQLITE": tmp_path / "dados" / "contas.sqlite3",
+        "CONTAS_JSON": tmp_path / "dados" / "contas.json",
     })
-    assert not instancia.config["CONTAS_SQLITE"].exists()
+    assert not instancia.config["CONTAS_JSON"].exists()
     client = instancia.test_client()
     import re
     csrf = re.search(r'name="csrf_token" value="([^" ]+)"', client.get("/login").get_data(as_text=True)).group(1)
@@ -74,7 +74,7 @@ def test_contas_habilitadas_aguardam_bootstrap_sem_criar_dados(tmp_path):
         data={"identificador": "admin@pucpr.edu.br", "senha": "Senha-ficticia-123!", "csrf_token": csrf},
     )
     assert resposta.status_code == 503
-    assert not instancia.config["CONTAS_SQLITE"].parent.exists()
+    assert not instancia.config["CONTAS_JSON"].parent.exists()
 
 
 def test_fabricas_contas_nao_compartilham_servicos_ou_dados(tmp_path):
@@ -83,7 +83,7 @@ def test_fabricas_contas_nao_compartilham_servicos_ou_dados(tmp_path):
     primeira, segunda = [create_app({
         "SECRET_KEY": "chave-isolada-de-teste",
         "CONTAS_HABILITADAS": True,
-        "CONTAS_SQLITE": tmp_path / nome / "contas.sqlite3",
+        "CONTAS_JSON": tmp_path / nome / "contas.json",
     }) for nome in ("primeira", "segunda")]
     assert primeira.extensions["contas"] is not segunda.extensions["contas"]
     primeira.extensions["autenticacao"].inicializar_administrador(
@@ -92,7 +92,7 @@ def test_fabricas_contas_nao_compartilham_servicos_ou_dados(tmp_path):
     )
     with pytest.raises(ErroPersistencia):
         segunda.extensions["autenticacao"].autenticar("admin@pucpr.edu.br", "Senha-ficticia-123!")
-    assert not segunda.config["CONTAS_SQLITE"].exists()
+    assert not segunda.config["CONTAS_JSON"].exists()
 
 
 @pytest.mark.parametrize("duracao", [0, -1, True, "1800"])
@@ -100,7 +100,7 @@ def test_duracao_sessao_invalida_na_fabrica(tmp_path, duracao):
     with pytest.raises(ValueError):
         create_app({
             "SECRET_KEY": "chave-isolada-de-teste", "CONTAS_HABILITADAS": True,
-            "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
+            "CONTAS_JSON": tmp_path / "contas.json",
             "CONTAS_DURACAO_SESSAO_SEGUNDOS": duracao,
         })
-    assert not (tmp_path / "contas.sqlite3").exists()
+    assert not (tmp_path / "contas.json").exists()

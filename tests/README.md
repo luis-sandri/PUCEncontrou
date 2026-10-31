@@ -6,11 +6,11 @@
 - `conftest.py`: fixtures comuns; coordenar mudanças com Luís e André.
 
 Executar `python -m pytest` na raiz. Além da base, a branch de Luís testa o
-módulo de contas de Luís: `unit/test_sqlite_contas.py`,
+módulo de contas de Luís: `unit/test_json_contas.py`,
 `unit/test_servicos_contas.py`, `integration/test_contas_cli.py` e
-`integration/test_contas_http.py`. A integração usa CLI, SQLite temporário e
+`integration/test_contas_http.py`. A integração usa CLI, JSON temporário e
 cliente Flask reais, com formulários HTML, domínio institucional, autorização,
-CSRF, sessão Flask, reativação, recuperação local, migração v1→v2 e falhas
+CSRF, sessão Flask, reativação, recuperação local, importação do legado SQLite para JSON e falhas
 transacionais. Todos os dados persistidos usam `tmp_path`. Não há testes pulados que deem a impressão de módulos concluídos.
 
 Se o ambiente de execução restringir a pasta temporária do sistema, usar

@@ -5,7 +5,7 @@ integrantes para uma disciplina de Engenharia de Software.
 
 **Etapa atual:** aplicação Flask mínima executável e contratos preliminares.
 Por padrão, somente `GET /` e arquivos estáticos estão disponíveis.
-Esta branch acrescenta o **módulo de contas de Luís**: contas em SQLite,
+Esta branch acrescenta o **módulo de contas de Luís**: contas em JSON,
 autenticação simples, formulários Jinja, gestão de secretários e CLI local,
 ativados explicitamente para avaliação das escolhas de P09/P10 definidas por Luís. Consulte o
 [guia de validação](docs/desenvolvimento-luis.md). Ocorrências, estruturas
@@ -37,11 +37,11 @@ criar o ambiente. Um `.venv` já preparado dispensa a criação novamente.
 Abra `http://127.0.0.1:5000/`. O Flask CLI carrega `.env` com python-dotenv;
 uma chamada Python direta a `create_app` recebe configuração explícita ou
 variáveis de ambiente. A fábrica recusa iniciar sem `SECRET_KEY` e não cria
-JSON, SQLite, administrador ou diretórios de persistência nesta etapa.
+JSON de contas/ocorrências, administrador ou diretórios de persistência nesta etapa.
 
 O depurador é para uso local. O frontend inicial usa Bootstrap 5.3.8 via
 CDN com integridade; o carregamento desses estilos requer internet.
-SQLite faz parte da biblioteca padrão; Jinja2 e Werkzeug vêm com Flask.
+JSON faz parte da biblioteca padrão; Jinja2 e Werkzeug vêm com Flask.
 Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 
 ## Testar
@@ -51,7 +51,7 @@ Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 ```
 
 Os testes verificam a base, o isolamento e a ausência de endpoints de negócio
-por padrão, além do módulo optativo de contas: SQLite temporário, autorização,
+por padrão, além do módulo optativo de contas: JSON temporário, autorização,
 CSRF, sessão Flask, reativação, migração, falhas transacionais e CLI sem senha na saída.
 Consulte [a organização dos testes](tests/README.md).
 
@@ -68,7 +68,7 @@ app/
   models/                Ocorrência (Marcelo), contas (Luís)
   structures/            Lista Dinâmica (Marcelo), AVL (Leandro)
   services/              CRUD/regras, consultas, correspondência, contas
-  repositories/          JSON (Matheus), SQLite (Luís)
+  repositories/          JSON de ocorrências (Matheus) e de contas (Luís)
   routes/                HTTP e autorização (Luís)
   templates/             Jinja2 (Mariana)
   static/                CSS, JavaScript e imagens (Mariana)
@@ -84,7 +84,7 @@ assinaturas para consumidores e fakes, não executam funcionalidades e não
 devem ser instanciadas. Não representam a implementação acadêmica de Lista
 ou AVL. Não há composição dos serviços de ocorrências na fábrica. Os serviços
 concretos de contas só são compostos com `PUC_CONTAS_HABILITADAS=true`; nem essa
-composição cria banco ou administrador. A CLI explícita prepara o SQLite.
+composição cria arquivo ou administrador. A CLI explícita prepara o JSON de contas.
 
 ## Começar o trabalho em equipe
 
@@ -100,17 +100,17 @@ composição cria banco ou administrador. A CLI explícita prepara o SQLite.
    progressivamente. Luís coordena a fábrica; André coordena testes integrados.
 
 O JSON é a persistência das ocorrências; a Lista manual contém os registros
-em memória; a AVL manual é um índice auxiliar de datas e IDs. SQLite guarda
-contas administrativas. Interface e rotas não acessam dados diretamente.
+em memória; a AVL manual é um índice auxiliar de datas e IDs. Contas
+administrativas usam outro JSON, mantido por Luís. Interface e rotas não acessam dados diretamente.
 
-Categorias e campos exatos continuam em revisão. Para a equipe avaliar,
-foram selecionadas as seguintes propostas: data de perda/achado para a AVL;
-pontuação inicial de correspondência **somente para testes**; exclusão
-física; vínculo 1:1 criado por secretário; justificativa obrigatória
-para cancelar; gestão de contas de secretário com cadastro, edição,
-desativação, reativação e redefinição de senha. **Nenhuma dessas seleções é ainda
-aprovação coletiva**, e os efeitos e contratos pendentes constam em
-[pendências](docs/pendencias.md). Não há entrevistas ou dados reais incluídos nesta base.
+Em 31/10, a pedido de Luís, os pontos conflitantes foram alinhados às regras
+registradas nas branches de Marcelo: foto obrigatória nos dois tipos; nome,
+categoria, data e local mínimos; vínculo 1:1 de tipos opostos abertos; exclusão
+física que limpa o vínculo e preserva o parceiro; cancelamento somente de ABERTO
+isolado. Categorias finais, exposição pública, uploads, justificativa e política
+de cancelamento de pares continuam em revisão, conforme
+[pendências](docs/pendencias.md). Modelo/núcleo/Lista dos colegas permanecem nas
+suas branches; esta adequação não os incorpora nem expõe suas rotas.
 Contas, hashes, arquivos locais e segredos não devem entrar no Git. Nenhuma
 alteração de Jira, publicação, commit ou push faz parte desta preparação.
 
@@ -122,8 +122,10 @@ a API JSON e a tabela de sessões foram removidas. As decisões estão em
 As telas mínimas permitem testar `/login` e a gestão de secretários; Mariana
 continua responsável pelo acabamento visual.
 
-**Se já usou o banco do protótipo anterior**, consulte a
-[migração v1→v2 e recuperação de acesso](docs/desenvolvimento-luis.md).
+**Se já usou o SQLite do protótipo anterior**, consulte a
+[importação explícita para JSON e recuperação de acesso](docs/desenvolvimento-luis.md).
+A configuração atual é `PUC_CONTAS_JSON=instance/contas.json`; a antiga
+`PUC_CONTAS_SQLITE` deixa de ser usada. Nenhum dado local é convertido automaticamente.
 
 ## Referências técnicas
 

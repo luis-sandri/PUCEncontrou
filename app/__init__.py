@@ -27,7 +27,7 @@ def create_app(config: Mapping[str, Any] | None = None) -> Flask:
         raise RuntimeError("CONTAS_HABILITADAS deve ser um booleano.")
     if app.config["CONTAS_HABILITADAS"]:
         from app.cli import contas_cli
-        from app.repositories.sqlite_contas import RepositorioContasSQLite
+        from app.repositories.json_contas import RepositorioContasJSON
         from app.routes.autenticacao import bp as autenticacao_bp
         from app.routes.contas import bp as contas_bp
         from app.services.autenticacao import ServicoAutenticacao
@@ -36,7 +36,7 @@ def create_app(config: Mapping[str, Any] | None = None) -> Flask:
         duracao = app.config["CONTAS_DURACAO_SESSAO_SEGUNDOS"]
         if type(duracao) is not int or duracao <= 0:
             raise ValueError("A duração da sessão deve ser um inteiro positivo.")
-        repositorio = RepositorioContasSQLite(app.config["CONTAS_SQLITE"])
+        repositorio = RepositorioContasJSON(app.config["CONTAS_JSON"])
         app.extensions["autenticacao"] = ServicoAutenticacao(repositorio)
         app.extensions["contas"] = ServicoContas(repositorio)
         app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(seconds=duracao)

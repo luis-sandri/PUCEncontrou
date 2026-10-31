@@ -1,4 +1,4 @@
-"""Cenários de contas e sessões de Luís com SQLite fictício e isolado."""
+"""Cenários de contas e sessões de Luís com JSON fictício e isolado."""
 
 from dataclasses import FrozenInstanceError, asdict, replace
 
@@ -13,7 +13,7 @@ from app.erros import (
     PermissaoNegada,
 )
 from app.models.conta import Perfil
-from app.repositories.sqlite_contas import RepositorioContasSQLite
+from app.repositories.json_contas import RepositorioContasJSON
 from app.services.autenticacao import ServicoAutenticacao
 from app.services.contas import ServicoContas
 
@@ -23,7 +23,7 @@ OUTRA_SENHA = "outra-senha-de-teste-5678"
 
 @pytest.fixture
 def contexto(tmp_path):
-    repositorio = RepositorioContasSQLite(tmp_path / "contas.sqlite3")
+    repositorio = RepositorioContasJSON(tmp_path / "contas.json")
     autenticacao = ServicoAutenticacao(repositorio)
     administrador = autenticacao.inicializar_administrador(
         {"nome": "Admin Fictício", "identificador": "admin@pucpr.edu.br"}, SENHA
@@ -246,8 +246,8 @@ def test_recuperacao_local_preserva_admin_e_encerra_sessoes(contexto):
 
 
 def test_bootstrap_sem_conta_padrao_e_sem_repeticao(tmp_path):
-    caminho = tmp_path / "contas.sqlite3"
-    autenticacao = ServicoAutenticacao(RepositorioContasSQLite(caminho))
+    caminho = tmp_path / "contas.json"
+    autenticacao = ServicoAutenticacao(RepositorioContasJSON(caminho))
     assert not caminho.exists()
     admin = autenticacao.inicializar_administrador(
         {"nome": "Admin Fictício", "identificador": "admin@pucpr.edu.br"}, SENHA

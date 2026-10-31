@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.erros import ErroValidacao, FalhaAutenticacao
 from app.models.conta import ContaAdministrativa, ContaAdministrativaPorta
-from app.repositories.sqlite_contas import RepositorioContasPorta
+from app.repositories.contas import RepositorioContasPorta
 from app.services.contas import normalizar_identificador, validar_dados_conta, validar_senha
 
 
@@ -55,8 +55,8 @@ class ServicoAutenticacao:
             return None
         return conta.para_visao()
 
-    def atualizar_banco(self) -> None:
-        """Somente CLI: cria ou migra o esquema sem criar contas."""
+    def preparar_arquivo(self) -> None:
+        """Somente CLI: prepara o arquivo JSON sem criar contas."""
         self._repositorio.inicializar()
 
     def inicializar_administrador(
@@ -64,12 +64,16 @@ class ServicoAutenticacao:
     ) -> ContaAdministrativa:
         dados_validados = validar_dados_conta(dados)
         senha_hash = generate_password_hash(validar_senha(senha))
-        self.atualizar_banco()
+        self.preparar_arquivo()
         return self._repositorio.inicializar_administrador(dados_validados, senha_hash=senha_hash)
 
     def recuperar_administrador(self, identificador: str, senha: str) -> ContaAdministrativa:
         """Recuperação por operador local; não expor como rota pública."""
         email = normalizar_identificador(identificador)
         senha_hash = generate_password_hash(validar_senha(senha))
-        self.atualizar_banco()
+        self.preparar_arquivo()
         return self._repositorio.recuperar_administrador(email, senha_hash=senha_hash)
+
+    def importar_contas_legadas(self, origem: str) -> int:
+        """Somente CLI, com servidor parado: não modifica o banco antigo."""
+        return self._repositorio.importar_legado_sqlite(origem)
