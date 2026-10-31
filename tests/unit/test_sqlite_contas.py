@@ -1,7 +1,6 @@
 """Persistência experimental de contas usando somente dados sintéticos em tmp_path."""
 
 from dataclasses import FrozenInstanceError
-from hashlib import sha256
 import sqlite3
 
 import pytest
@@ -10,7 +9,6 @@ from app.erros import (
     ContaNaoEncontrada,
     ErroPersistencia,
     ErroValidacao,
-    FalhaAutenticacao,
     IdentificadorEmUso,
 )
 from app.models.conta import Perfil
@@ -26,14 +24,6 @@ def repositorio(tmp_path):
 
 def dados(identificador="secretario-teste"):
     return {"nome": "Secretário fictício", "identificador": identificador}
-
-
-def token_hash(token="token-ficticio"):
-    return sha256(token.encode()).hexdigest()
-
-
-def criar_sessao(repo, conta, *, token="token-ficticio", senha_hash="hash-sintetico"):
-    repo.criar_sessao(conta.id, token_hash(token), 200, senha_hash_esperada=senha_hash)
 
 
 def test_construtor_e_consulta_nao_criam_dados(tmp_path):
@@ -89,80 +79,68 @@ def test_administrador_inicial_unico_e_inicializacao_idempotente(repositorio):
     assert repositorio.buscar_por_id(admin.id).nome == admin.nome
 
 
-def test_sessao_expira_na_fronteira_e_logout_revoga(repositorio):
-    conta = repositorio.salvar_secretario(dados(), senha_hash="hash-sintetico")
-    criar_sessao(repositorio, conta)
-    assert repositorio.buscar_sessao(token_hash(), 199).id == conta.id
-    assert repositorio.buscar_sessao(token_hash(), 200) is None
-    repositorio.revogar_sessao(token_hash())
-    repositorio.revogar_sessao(token_hash())
-    assert repositorio.buscar_sessao(token_hash(), 100) is None
-    with sqlite3.connect(repositorio.caminho) as conexao:
-        assert conexao.execute("SELECT count(*) FROM sessoes").fetchone()[0] == 0
-
-
 @pytest.mark.parametrize("alteracoes,novo_hash", [
-    ({"ativa": False}, None),
-    ({}, "hash-novo"),
-    ({"identificador": "identificador-novo"}, None),
+    ({"ativa": False}, None), ({}, "hash-novo"), ({"identificador": "novo"}, None),
 ])
-def test_mudanca_de_acesso_revoga_todas_sessoes_da_conta(repositorio, alteracoes, novo_hash):
+def test_alteracao_acesso_atualiza_versao_apenas_da_conta_alvo(repositorio, alteracoes, novo_hash):
     conta = repositorio.salvar_secretario(dados(), senha_hash="hash-sintetico")
-    outra = repositorio.salvar_secretario(dados("outro-secretario"), senha_hash="hash-sintetico")
-    criar_sessao(repositorio, conta)
-    criar_sessao(repositorio, conta, token="segundo-token")
-    criar_sessao(repositorio, outra, token="outra-conta")
-    repositorio.atualizar_secretario(conta.id, alteracoes, senha_hash=novo_hash)
-    assert repositorio.buscar_sessao(token_hash(), 100) is None
-    assert repositorio.buscar_sessao(token_hash("segundo-token"), 100) is None
-    assert repositorio.buscar_sessao(token_hash("outra-conta"), 100).id == outra.id
-    with sqlite3.connect(repositorio.caminho) as conexao:
-        assert conexao.execute("SELECT count(*) FROM sessoes WHERE conta_id = ?", (conta.id,)).fetchone()[0] == 0
+    outra = repositorio.salvar_secretario(dados("outra"), senha_hash="hash-outra")
+    atualizada = repositorio.atualizar_secretario(conta.id, alteracoes, senha_hash=novo_hash)
+    assert atualizada.versao_sessao == conta.versao_sessao + 1
+    assert repositorio.buscar_por_id(outra.id).versao_sessao == outra.versao_sessao
 
 
-def test_renomear_preserva_sessoes(repositorio):
+def test_renomear_preserva_versao(repositorio):
     conta = repositorio.salvar_secretario(dados(), senha_hash="hash-sintetico")
-    criar_sessao(repositorio, conta)
-    atualizada = repositorio.atualizar_secretario(conta.id, {"nome": "Novo nome fictício"})
-    assert atualizada.nome == "Novo nome fictício"
-    assert repositorio.buscar_sessao(token_hash(), 100).nome == atualizada.nome
+    atualizada = repositorio.atualizar_secretario(conta.id, {"nome": "Novo nome"})
+    assert atualizada.nome == "Novo nome"
+    assert atualizada.versao_sessao == conta.versao_sessao
 
 
-def test_erro_de_unicidade_desfaz_reset_e_preserva_sessao(repositorio):
-    conta = repositorio.salvar_secretario(dados(), senha_hash="hash-sintetico")
-    repositorio.salvar_secretario(dados("ocupado"), senha_hash="hash-sintetico")
-    criar_sessao(repositorio, conta)
+def test_unicidade_desfaz_senha_situacao_e_versao_juntas(repositorio):
+    conta = repositorio.salvar_secretario(dados(), senha_hash="hash-original")
+    repositorio.salvar_secretario(dados("ocupado"), senha_hash="hash-outra")
+    antes = repositorio.buscar_por_id(conta.id)
     with pytest.raises(IdentificadorEmUso):
-        repositorio.atualizar_secretario(conta.id, {"identificador": "OCUPADO"}, senha_hash="hash-novo")
-    assert repositorio.buscar_por_id(conta.id).senha_hash == "hash-sintetico"
-    assert repositorio.buscar_sessao(token_hash(), 100).id == conta.id
+        repositorio.atualizar_secretario(
+            conta.id, {"identificador": "OCUPADO", "ativa": False}, senha_hash="hash-novo"
+        )
+    assert repositorio.buscar_por_id(conta.id) == antes
 
 
-def test_falha_ao_revogar_desfaz_atualizacao_inteira(repositorio):
-    conta = repositorio.salvar_secretario(dados(), senha_hash="hash-sintetico")
-    criar_sessao(repositorio, conta)
-    with sqlite3.connect(repositorio.caminho) as conexao:
-        conexao.execute("""CREATE TRIGGER falhar_revogacao BEFORE DELETE ON sessoes
+def test_falha_escrita_preserva_credenciais_e_versao(repositorio):
+    conta = repositorio.salvar_secretario(dados(), senha_hash="hash-original")
+    antes = repositorio.buscar_por_id(conta.id)
+    with sqlite3.connect(repositorio.caminho) as con:
+        con.execute("""CREATE TRIGGER falhar BEFORE UPDATE ON contas
             BEGIN SELECT RAISE(ABORT, 'falha sintetica'); END""")
     with pytest.raises(ErroPersistencia):
         repositorio.atualizar_secretario(conta.id, {"ativa": False}, senha_hash="hash-novo")
-    credenciais = repositorio.buscar_por_id(conta.id)
-    assert credenciais.ativa is True
-    assert credenciais.senha_hash == "hash-sintetico"
-    assert repositorio.buscar_sessao(token_hash(), 100).id == conta.id
+    assert repositorio.buscar_por_id(conta.id) == antes
 
 
-def test_criar_sessao_nao_aceita_hash_anterior_ou_conta_desativada(repositorio):
-    conta = repositorio.salvar_secretario(dados(), senha_hash="hash-sintetico")
-    repositorio.atualizar_secretario(conta.id, {}, senha_hash="hash-novo")
-    with pytest.raises(FalhaAutenticacao):
-        criar_sessao(repositorio, conta)
-    criar_sessao(repositorio, conta, senha_hash="hash-novo")
-    repositorio.atualizar_secretario(conta.id, {"ativa": False})
-    with pytest.raises(FalhaAutenticacao):
-        criar_sessao(repositorio, conta, senha_hash="hash-novo")
-    with pytest.raises(FalhaAutenticacao):
-        repositorio.criar_sessao("inexistente", token_hash(), 200, senha_hash_esperada="hash")
+def test_migracao_v1_preserva_contas_e_remove_tabela_sessoes(tmp_path):
+    caminho = tmp_path / "antigo.sqlite3"
+    with sqlite3.connect(caminho) as con:
+        con.execute("""CREATE TABLE contas (
+            id TEXT PRIMARY KEY, perfil TEXT NOT NULL, nome TEXT NOT NULL,
+            identificador TEXT NOT NULL UNIQUE, ativa INTEGER NOT NULL, senha_hash TEXT NOT NULL
+        )""")
+        con.execute("INSERT INTO contas VALUES ('id-antigo', 'ADMINISTRADOR', 'Admin antigo', 'admin.fixture', 1, 'hash-antigo')")
+        con.execute("CREATE TABLE sessoes (token_hash TEXT, conta_id TEXT, expira_em INTEGER)")
+        con.execute("INSERT INTO sessoes VALUES ('token-antigo', 'id-antigo', 999999)")
+        con.execute("PRAGMA user_version = 1")
+    repo = RepositorioContasSQLite(caminho)
+    repo.inicializar()
+    conta = repo.buscar_por_id("id-antigo")
+    assert conta.nome == "Admin antigo"
+    assert conta.senha_hash == "hash-antigo"
+    assert conta.identificador == "admin.fixture"
+    assert conta.versao_sessao == 0
+    repo.inicializar()
+    with sqlite3.connect(caminho) as con:
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert con.execute("SELECT name FROM sqlite_master WHERE name='sessoes'").fetchone() is None
 
 
 def test_banco_existente_desconhecido_nao_e_sobrescrito(tmp_path):

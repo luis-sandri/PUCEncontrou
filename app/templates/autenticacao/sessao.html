@@ -1,0 +1,13 @@
+{% extends "contas/layout.html" %}
+{% block title %}Minha sessão · PUC Encontrou{% endblock %}
+{% block conteudo_contas %}
+  <h1>Minha sessão</h1>
+  <p>Olá, {{ ator_atual.nome }}.</p>
+  <dl>
+    <dt>E-mail</dt><dd>{{ ator_atual.identificador }}</dd>
+    <dt>Perfil</dt><dd>{{ 'Administrador' if ator_atual.perfil == 'ADMINISTRADOR' else 'Secretário' }}</dd>
+  </dl>
+  {% if ator_atual.perfil == 'ADMINISTRADOR' %}
+    <a class="btn btn-primary" href="{{ url_for('contas.listar_secretarios') }}">Gerenciar secretários</a>
+  {% endif %}
+{% endblock %}

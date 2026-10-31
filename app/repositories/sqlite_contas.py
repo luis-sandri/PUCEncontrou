@@ -1,4 +1,4 @@
-"""Persistência SQLite de contas e sessões do módulo experimental de Luís.
+"""Persistência SQLite de contas do módulo experimental de Luís.
 
 O construtor não acessa disco. A inicialização é uma ação explícita da CLI;
 nenhuma conta ou senha padrão é criada.
@@ -16,7 +16,6 @@ from app.erros import (
     ContaNaoEncontrada,
     ErroPersistencia,
     ErroValidacao,
-    FalhaAutenticacao,
     IdentificadorEmUso,
 )
 from app.models.conta import (
@@ -55,15 +54,9 @@ class RepositorioContasPorta(Protocol):
         senha_hash: str | None = None,
     ) -> ContaAdministrativa: ...
 
-    def criar_sessao(
-        self, conta_id: str, token_hash: str, expira_em: int, *, senha_hash_esperada: str
-    ) -> None: ...
-
-    def buscar_sessao(
-        self, token_hash: str, agora: int
-    ) -> CredenciaisContaPorta | None: ...
-
-    def revogar_sessao(self, token_hash: str) -> None: ...
+    def recuperar_administrador(
+        self, identificador: str, *, senha_hash: str
+    ) -> ContaAdministrativa: ...
 
 
 class RepositorioContasSQLite:
@@ -81,7 +74,7 @@ class RepositorioContasSQLite:
             conexao = sqlite3.connect(uri, uri=True, timeout=5)
             conexao.row_factory = sqlite3.Row
             conexao.execute("PRAGMA foreign_keys = ON")
-            if conexao.execute("PRAGMA user_version").fetchone()[0] != 1:
+            if conexao.execute("PRAGMA user_version").fetchone()[0] != 2:
                 raise ErroPersistencia("Banco de contas não inicializado ou incompatível.")
             if escrita:
                 conexao.execute("BEGIN IMMEDIATE")
@@ -109,7 +102,7 @@ class RepositorioContasSQLite:
             conexao.execute("PRAGMA foreign_keys = ON")
             conexao.execute("BEGIN IMMEDIATE")
             versao = conexao.execute("PRAGMA user_version").fetchone()[0]
-            if versao not in (0, 1):
+            if versao not in (0, 1, 2):
                 raise ErroPersistencia("Versão do banco de contas incompatível.")
             if versao == 0 and conexao.execute(
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
@@ -122,24 +115,21 @@ class RepositorioContasSQLite:
                     nome TEXT NOT NULL,
                     identificador TEXT NOT NULL UNIQUE,
                     ativa INTEGER NOT NULL CHECK (ativa IN (0, 1)),
-                    senha_hash TEXT NOT NULL
+                    senha_hash TEXT NOT NULL,
+                    versao_sessao INTEGER NOT NULL DEFAULT 0
                 )"""
             )
             conexao.execute(
                 """CREATE UNIQUE INDEX IF NOT EXISTS administrador_unico ON contas(perfil)
                 WHERE perfil = 'ADMINISTRADOR'"""
             )
-            conexao.execute(
-                """CREATE TABLE IF NOT EXISTS sessoes (
-                    token_hash TEXT PRIMARY KEY,
-                    conta_id TEXT NOT NULL REFERENCES contas(id) ON DELETE CASCADE,
-                    expira_em INTEGER NOT NULL
-                )"""
-            )
-            conexao.execute(
-                "CREATE INDEX IF NOT EXISTS sessoes_conta ON sessoes(conta_id)"
-            )
-            conexao.execute("PRAGMA user_version = 1")
+            if versao == 1:
+                conexao.execute(
+                    "ALTER TABLE contas ADD COLUMN versao_sessao INTEGER NOT NULL DEFAULT 0"
+                )
+                # Migração explícita: preserva contas e descarta sessões do protótipo.
+                conexao.execute("DROP TABLE IF EXISTS sessoes")
+            conexao.execute("PRAGMA user_version = 2")
             conexao.commit()
         except (sqlite3.Error, OSError):
             raise ErroPersistencia("Não foi possível inicializar o banco de contas.") from None
@@ -159,6 +149,7 @@ class RepositorioContasSQLite:
                 identificador=registro["identificador"],
                 ativa=bool(registro["ativa"]),
                 senha_hash=registro["senha_hash"],
+                versao_sessao=registro["versao_sessao"],
             )
         except (ValueError, KeyError, IndexError):
             raise ErroPersistencia("Registro de conta inválido.") from None
@@ -259,44 +250,49 @@ class RepositorioContasSQLite:
                 "identificador": dados.get("identificador", credenciais.identificador),
             })
             ativa = dados.get("ativa", credenciais.ativa)
+            invalidar = (
+                ativa != credenciais.ativa
+                or senha_hash is not None
+                or identificador != credenciais.identificador
+            )
+            versao_sessao = credenciais.versao_sessao + int(invalidar)
             try:
                 conexao.execute(
-                    "UPDATE contas SET nome = ?, identificador = ?, ativa = ?, senha_hash = ? "
+                    "UPDATE contas SET nome = ?, identificador = ?, ativa = ?, senha_hash = ?, versao_sessao = ? "
                     "WHERE id = ? AND perfil = ?",
                     (nome, identificador, int(ativa),
                      senha_hash if senha_hash is not None else credenciais.senha_hash,
-                     conta_id, Perfil.SECRETARIO.value),
+                     versao_sessao, conta_id, Perfil.SECRETARIO.value),
                 )
             except sqlite3.IntegrityError as erro:
                 if getattr(erro, "sqlite_errorname", "") == "SQLITE_CONSTRAINT_UNIQUE":
                     raise IdentificadorEmUso("Identificador já cadastrado.") from None
                 raise
-            if not ativa or senha_hash is not None or identificador != credenciais.identificador:
-                conexao.execute("DELETE FROM sessoes WHERE conta_id = ?", (conta_id,))
             return ContaAdministrativa(
-                conta_id, Perfil.SECRETARIO, nome, identificador, bool(ativa)
+                conta_id, Perfil.SECRETARIO, nome, identificador, bool(ativa), versao_sessao
             )
 
-    def criar_sessao(
-        self, conta_id: str, token_hash: str, expira_em: int, *, senha_hash_esperada: str
-    ) -> None:
+    def recuperar_administrador(
+        self, identificador: str, *, senha_hash: str
+    ) -> ContaAdministrativa:
+        """Recuperação local explícita: mantém ID e nome do único administrador."""
         with self._conexao(escrita=True) as conexao:
-            resultado = conexao.execute(
-                "INSERT INTO sessoes (token_hash, conta_id, expira_em) "
-                "SELECT ?, id, ? FROM contas WHERE id = ? AND ativa = 1 AND senha_hash = ?",
-                (token_hash, expira_em, conta_id, senha_hash_esperada),
-            )
-            if resultado.rowcount != 1:
-                raise FalhaAutenticacao("Não foi possível autenticar.")
-
-    def buscar_sessao(self, token_hash: str, agora: int) -> CredenciaisConta | None:
-        with self._conexao() as conexao:
-            return self._credenciais(conexao.execute(
-                "SELECT contas.* FROM contas JOIN sessoes ON contas.id = sessoes.conta_id "
-                "WHERE sessoes.token_hash = ? AND sessoes.expira_em > ? AND contas.ativa = 1",
-                (token_hash, agora),
+            conta = self._credenciais(conexao.execute(
+                "SELECT * FROM contas WHERE perfil = ?", (Perfil.ADMINISTRADOR.value,)
             ).fetchone())
-
-    def revogar_sessao(self, token_hash: str) -> None:
-        with self._conexao(escrita=True) as conexao:
-            conexao.execute("DELETE FROM sessoes WHERE token_hash = ?", (token_hash,))
+            if conta is None:
+                raise ContaNaoEncontrada("Administrador inicial não encontrado.")
+            try:
+                conexao.execute(
+                    "UPDATE contas SET identificador = ?, senha_hash = ?, ativa = 1, "
+                    "versao_sessao = versao_sessao + 1 WHERE id = ?",
+                    (identificador, senha_hash, conta.id),
+                )
+            except sqlite3.IntegrityError as erro:
+                if getattr(erro, "sqlite_errorname", "") == "SQLITE_CONSTRAINT_UNIQUE":
+                    raise IdentificadorEmUso("E-mail já cadastrado.") from None
+                raise
+            return ContaAdministrativa(
+                conta.id, Perfil.ADMINISTRADOR, conta.nome, identificador,
+                True, conta.versao_sessao + 1,
+            )

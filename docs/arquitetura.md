@@ -11,11 +11,13 @@ gravação abaixo são **propostas técnicas v0 desta preparação**, a serem
 revisadas pelos responsáveis. Elas não acrescentam regras de negócio.
 
 **Implementação candidata de Luís (30/10/2026):** contas, SQLite, sessões e
-rotas JSON têm um módulo experimental separado por configuração, sem I/O na
+formulários Jinja têm um módulo separado por configuração, sem I/O na
 fábrica e sem implementar os módulos dos colegas. Veja o
 [guia de validação](desenvolvimento-luis.md) e o contrato executável de contas
-em [contratos](contratos.md). P09/P10 continuam pendentes; o ciclo futuro de
-ocorrências descrito abaixo não foi integrado.
+em [contratos](contratos.md). P09/P10 de contas foram definidos por Luís em
+30/10 e aguardam revisão coletiva. Sessão nativa do Flask substitui os tokens
+e a tabela de sessões do primeiro protótipo. O ciclo futuro de ocorrências
+descrito abaixo não foi integrado.
 
 ```mermaid
 flowchart TD
@@ -103,12 +105,13 @@ Os contratos v0 são suficientes para iniciar algoritmos, adaptadores com
 fakes, página-base e testes de unidade. Permitem compilar/importar módulos
 sem implementações de outros colegas e sem inicializar dados reais.
 
-Ainda não são suficientes para integrar formulários reais, JSON definitivo,
+Ainda não são suficientes para integrar formulários reais de ocorrências, JSON definitivo,
 consulta temporal conectada ao modelo ou correspondência pontuada. Esses
 fluxos dependem especialmente de P01–P05 em [pendências](pendencias.md).
 O contrato HTTP é um rascunho documentado; não há endpoints fictícios ativos.
 Não há teste de conformidade estática ou de integração funcional dos protocolos
-nesta entrega. Sua aceitação exige revisão e testes pelos responsáveis.
+de ocorrências nesta entrega. O módulo de contas possui seus próprios testes
+de integração com SQLite e formulários. Sua aceitação exige revisão e testes pelos responsáveis.
 
 ## Arquivos com risco de conflito no Git
 

@@ -1,27 +1,27 @@
-# Backend de Luís para validação
+# Módulo de contas de Luís: validação local
 
-Branch: `feat/luis-contas-autenticacao`. Implementação candidata de P09/P10,
-sem registrar aprovação coletiva nem alterar as regras de negócio aprovadas.
-As escolhas abaixo são técnicas e provisórias para permitir a revisão local.
+Branch: `feat/luis-contas-autenticacao`. Em 30/10/2026, Luís definiu P09 e o
+escopo simplificado de P10 nesta conversa e autorizou aplicar ao código.
+O domínio **`@pucpr.edu.br`** foi confirmado expressamente. O registro em
+[pendências](pendencias.md) distingue essas definições da revisão coletiva.
 
-## Escopo entregue
+O foco acadêmico continua sendo a Lista Dinâmica baseada em array e a AVL
+manuais. Contas e autenticação dão suporte à aplicação com Flask/Jinja e SQLite.
 
-- Modelos imutáveis de conta e projeções explícitas sem hash.
-- SQLite com esquema versionado, parâmetros SQL, transações e IDs UUID.
-- Administrador inicial único, provisionado somente por CLI interativa.
-- Autenticação com hashes Werkzeug e respostas de falha genéricas.
-- Sessões opacas com expiração absoluta de 30 minutos; SQLite armazena somente
-  o SHA-256 do token de sessão. O cookie assinado contém token e CSRF, sem perfil
-  ou credenciais. A conta ativa é consultada no backend em cada requisição.
-- Somente administrador ativo pode listar/cadastrar/editar/desativar/redefinir
-  senha de secretários. A alteração não pode atingir uma conta administrativa.
-- Desativação, troca de identificador ou redefinição de senha revogam todas as
-  sessões da conta na mesma transação. Logout revoga a sessão no servidor.
-- Rotas JSON com CSRF, lista explícita de campos e limite de corpo de 16 KiB.
+## O que está disponível
 
-A fábrica não acessa persistência, inclusive quando o módulo é habilitado.
-Ocorrências, Lista, AVL, JSON e correspondência não são compostos nem expostos.
-As telas Jinja continuam com Mariana; estas rotas permitem testar o backend.
+- Login por e-mail institucional; nome e e-mail único nas contas.
+- Administrador lista/cadastra/edita/desativa/reativa/redefine senhas de secretários.
+- Sessão nativa do Flask, duração absoluta de 30 minutos e consulta da conta no
+  backend. Contador na conta invalida acessos após mudança de credenciais/situação.
+- Formulários com CSRF, validação e mensagens; POST bem-sucedido redireciona.
+- Senhas com hash Werkzeug, SQL parametrizado e dados locais fora do Git.
+- CLI para criar o primeiro administrador, atualizar banco e recuperar o acesso local.
+
+A fábrica não acessa persistência. O módulo continua habilitado explicitamente;
+não compõe ocorrências, Lista, AVL, JSON ou correspondência. Templates mínimos
+permitem testar os fluxos; o acabamento visual segue com Mariana. `base.html` e
+os arquivos estáticos existentes foram preservados.
 
 ## Executar neste Mac
 
@@ -60,63 +60,80 @@ HTTPS exige `true`. Não coloque `.env`, SQLite ou credenciais no Git.
 .venv/bin/python -m flask --app app run --debug
 ```
 
-A CLI solicita nome, identificador, senha oculta e confirmação. Não recebe senha
+A CLI solicita nome, e-mail `@pucpr.edu.br`, senha oculta e confirmação. Não recebe senha
 por argumento. Repetir a inicialização recusa criar outro administrador e preserva
 o existente. Nenhuma senha padrão é fornecida. Antes do bootstrap, operações que
 precisam do banco respondem 503, sem criar arquivo durante requisições.
 
 No Windows, use `.\.venv\Scripts\python.exe` nos comandos conforme o README.
 
-## Contrato para experimentar com cliente HTTP
+## Atualizar um banco da versão anterior
 
-Use um cliente que preserve cookies. Obtenha o CSRF com `GET /login` e envie seu
-valor no cabeçalho `X-CSRF-Token` ao fazer `POST /login` com JSON contendo
-`identificador` e `senha`. Use o **novo** `csrf_token` retornado após o login em
-todas as mutações seguintes. O token anterior deixa de valer no cookie atual.
+A nova versão usa esquema SQLite **v2**, sem tabela de sessões. Se já criou um
+banco no primeiro protótipo (v1), execute explicitamente, com a aplicação parada:
 
-| Operação | Método e caminho | JSON de entrada | Resultado |
-| --- | --- | --- | --- |
-| Preparar login | `GET /login` | — | `{csrf_token}` |
-| Autenticar | `POST /login` | `identificador`, `senha` | `{conta, csrf_token}` |
-| Sessão atual | `GET /sessao` | — | `{conta, csrf_token}` |
-| Encerrar sessão | `POST /logout` | — | 204 |
-| Listar secretários | `GET /contas/secretarios` | — | `{contas: [...]}` |
-| Cadastrar secretário | `POST /contas/secretarios` | `nome`, `identificador`, `senha` | 201, `{conta}` |
-| Alterar secretário | `PATCH /contas/secretarios/<id>` | Um ou mais: `nome`, `identificador`, `ativa: false`, `senha` | `{conta}` |
+```sh
+.venv/bin/python -m flask --app app contas atualizar-banco
+```
 
-Somente os cinco campos `id`, `perfil`, `nome`, `identificador` e `ativa` compõem
-`conta`. Não aceitar `perfil`, `ator` ou `senha_hash` enviados pelo cliente.
-O identificador é genérico (não exige e-mail), tem 3–120 caracteres, é normalizado
-com `strip`/`casefold` e não aceita espaços ou controles. Nome tem 1–120 caracteres
-após `strip`, sem controles. Senha tem 12–128 caracteres Unicode codificáveis em
-UTF-8 e não é normalizada.
-Estes limites aguardam revisão da equipe, assim como o HTTP JSON e o tempo da sessão.
+O comando preserva contas, IDs e hashes, adiciona o contador de sessão e remove
+somente os registros/tabela de sessões antigos. A fábrica e as requisições não
+fazem migrações. Cookies antigos deixam de autenticar e será necessário entrar
+novamente. Banco desconhecido não é sobrescrito.
 
-Erros têm a forma `{erro: mensagem}`: 400 para entrada inválida, 401 para sessão
-ausente/inválida ou falha de login, 403 para permissão/CSRF, 404 para secretário
-inexistente, 409 para identificador em uso, 413 para corpo excessivo, 415 para
-conteúdo sem JSON e 503 para persistência indisponível. Falhas de login não dizem
-se o identificador existe. Respostas do módulo usam `Cache-Control: no-store`.
+A migração preserva identificadores antigos. Se seu administrador foi criado
+com login genérico, adapte o acesso para o e-mail institucional pela CLI:
 
-## Validar
+```sh
+.venv/bin/python -m flask --app app contas recuperar-administrador
+```
+
+Esse comando pede confirmação, e-mail e nova senha oculta/confirmada. Mantém o
+mesmo administrador, não cria outro e invalida seus acessos anteriores. É uma
+operação local do responsável pelo banco; não existe recuperação pública.
+Secretários com login antigo podem ter o e-mail corrigido pela tela administrativa.
+
+## Testar no navegador
+
+1. Abra `http://127.0.0.1:5000/login` e entre com o administrador criado na CLI.
+2. Em **Secretários**, cadastre nome, e-mail `@pucpr.edu.br`, senha e confirmação.
+3. Em **Gerenciar**, altere nome/e-mail, redefina senha ou desative/reative a conta.
+4. Entre com o secretário em outro navegador ou janela privada. Ele acessa sua
+   sessão, mas não gerencia contas. Desativar ou redefinir a senha pelo administrador
+   exige que o secretário faça novo login.
+5. Use **Sair** para limpar o acesso do navegador atual.
+
+As telas funcionam com formulários, sem cliente JSON ou JavaScript de autenticação.
+Sucesso redireciona com mensagem. Erros preservam nome/e-mail, sem preencher senha.
+A listagem vazia e os erros também têm telas. Não há rota de criação pública
+nem tela para novos administradores.
+
+Nome tem 1–120 caracteres sem controles; e-mail institucional tem até 120,
+normalizado com `strip`/`casefold`; senha tem 12–128 caracteres Unicode válidos,
+sem normalização. Os limites são técnicos para revisão da equipe.
+
+O [contrato HTTP](contratos.md) descreve caminhos, campos e códigos de resposta.
+
+## Validar automaticamente
 
 ```sh
 .venv/bin/python -m pytest
 ```
 
-Os testes usam somente SQLite em `tmp_path` e contas fictícias. Incluem fluxo
-CLI → SQLite → serviços → HTTP, matriz de acesso, campos extras, CSRF de outro
-cliente/rotacionado, expiração, replay de cookie depois de logout, reset e
-desativação, concorrência entre reset e login e rollback de alteração + revogação.
+Os testes usam somente `tmp_path`, contas fictícias e cliente Flask. Verificam
+CLI, migração v1→v2 preservando contas, recuperação local, persistência após
+reabertura, formulários, campos extras, CSRF, autorização, domínio de e-mail,
+expiração, reset/desativação/reativação e rollback de dados + contador em falha.
 
-## Limitações para revisão
+## Limites desta entrega
 
-P09/P10 continuam pendentes. Não há reativação, exclusão de contas, novos
-administradores, recuperação pública, alteração de credenciais próprias ou
-permissão administrativa sobre ocorrências. A integração dessas rotas com as
-telas depende do alinhamento com Mariana. Não há dados reais ou validação coletiva.
+P09 e a parte de contas de P10 estão definidos por Luís para esta branch;
+revisão coletiva e acabamento com Mariana continuam pendentes. Os fluxos de
+ocorrências dependem das decisões e implementações dos responsáveis.
 
-Esta versão se destina à avaliação local. Limitação de tentativas de login,
-limpeza periódica de sessões expiradas, recuperação de acesso e configuração
-de implantação HTTPS ainda precisam ser definidas antes de exposição pública.
-O comando Flask com `--debug` deve ser usado somente localmente.
+Logout limpa o cookie atual; sem registro de sessões no banco, não revoga uma
+cópia roubada do cookie. Reset e mudança de situação/identificador invalidam
+acessos anteriores pelo contador, inclusive após reativação. O escopo é local
+acadêmico; limitação de tentativas, recuperação por e-mail e infraestrutura de
+publicação ficam fora desta entrega. Se houver publicação, revisar HTTPS/cookie
+Secure. Usar `--debug` somente no desenvolvimento local.

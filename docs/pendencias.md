@@ -1,17 +1,17 @@
 # Pendências e propostas para revisão da equipe
 
-**Estado em 21/10/2026:** o solicitante selecionou alternativas para P01, P02, P03,
-P04, P05, P06 e P09. **Essas seleções não equivalem à aprovação coletiva.**
-Este documento registra o encaminhamento escolhido e as lacunas restantes,
-sem alterar as regras já aprovadas em [regras-negocio.md](regras-negocio.md).
-Não implementar como decisão final antes do alinhamento com a equipe.
+**Estado em 30/10/2026:** as seleções iniciais de 21/10 permanecem propostas
+para alinhamento da equipe. Nesta conversa, **Luís Sandri definiu o escopo de
+contas (P09) e sua simplificação HTTP (P10)** e autorizou aplicá-lo ao código.
+Confirmou também o domínio institucional **`@pucpr.edu.br`**.
 
-**Atualização técnica em 30/10/2026:** a branch de Luís contém uma implementação
-candidata de contas e HTTP para experimentar P09/P10, **desabilitada por padrão**.
-Ela não aprova as seleções de negócio. Campos, limites, sessão e JSON usados no
-protótipo estão em [contratos](contratos.md) e no
-[guia de validação](desenvolvimento-luis.md); aguardam revisão antes de integrar
-às telas ou habilitar na entrega. Demais pendências mantêm o estado anterior.
+O módulo de Luís já segue essas definições e possui formulários de avaliação,
+serviços, SQLite e testes. Isso encerra as dúvidas técnicas de P09/P10 para o
+módulo de contas desta branch; **não registra aprovação coletiva inexistente**.
+A revisão da equipe, o acabamento visual com Mariana e os contratos HTTP de
+ocorrências continuam separados. Regras previamente aprovadas estão em
+[regras-negocio.md](regras-negocio.md); contrato executável em
+[contratos.md](contratos.md) e instruções em [desenvolvimento-luis.md](desenvolvimento-luis.md).
 
 **Convenção:** "seleção do solicitante" = proposta a submeter à equipe;
 "aprovado anteriormente" = regra já consolidada; "a definir" = decisão
@@ -28,9 +28,10 @@ aceites individuais.
 | P04 | Preferir **exclusão física** | Efeitos em vínculos, fotos, índice, persistência e eventuais trilhas |
 | P05 | Preferir **vínculo 1:1, realizado por secretário** | Desvinculação, substituição, cancelamento/exclusão e integridade |
 | P06 | Preferir **justificativa obrigatória ao cancelar** | Motivos, apresentação, persistência e propagação em pares |
-| P09 | Administração com **cadastro, edição, desativação e redefinição de senha** | Identificação, recuperação, sessões, campos e política de segurança |
+| P09 | **Definido por Luís em 30/10:** nome, e-mail `@pucpr.edu.br` único; cadastro, edição, desativação, reativação e reset; sessão de 30 minutos; recuperação local do administrador | Revisão coletiva e validação de uso |
+| P10 | **Contas definidas por Luís em 30/10:** formulários Flask/Jinja, POST com redirecionamento, sessão Flask e proteções básicas | Acabamento visual com Mariana; contratos de ocorrências; revisão coletiva |
 
-Os itens P07, P08, P10, P11 e P12 permanecem pendências técnicas e de
+Os itens P07, P08, P11 e P12, além dos fluxos de ocorrências em P10, permanecem pendências técnicas e de
 integração. O Figma é referência de comportamento da interface, **não**
 evidência de que o código funciona nem aprovação automática de regras.
 
@@ -204,55 +205,65 @@ de mutações reais, sem bloquear os algoritmos isolados.
 
 ### P09 — Contas e alcance dos perfis
 
-**Protótipo para validação:** cadastro, edição, desativação e reset têm serviços,
-SQLite e testes isolados. Identificador genérico normalizado, nome, limites de
-senha, sessão de 30 minutos e revogação são escolhas candidatas documentadas,
-não decisões coletivas. Não há reativação ou recuperação pública. O bootstrap
-local explícito foi implementado sem conta padrão.
+**Definido com Luís Sandri nesta conversa, em 30/10/2026; implementado nesta
+branch para validação.** Sem declaração de aprovação pelos outros integrantes.
 
-**Seleção do solicitante:** o administrador deverá **cadastrar, editar,
-desativar e redefinir senhas** de contas de secretários. Essa lista de
-operações requer aprovação da equipe; não inclui exclusão física de
-contas nem autocadastro público. O Figma atual contempla o login da
-secretaria, mas **não evidencia a tela completa de gestão de contas**.
+| Tema | Seleção de Luís e comportamento implementado |
+| --- | --- |
+| Login | E-mail institucional **`@pucpr.edu.br`**, confirmado expressamente por Luís |
+| Dados | Nome e e-mail; ID gerado pelo backend, sem bloco obrigatório |
+| Unicidade | E-mail único, removendo espaços externos e ignorando maiúsculas/minúsculas |
+| Gestão | Administrador lista, cadastra, edita nome/e-mail, desativa, reativa e redefine senhas de secretários |
+| Permissões | Secretário não gerencia contas; administrador não herda ações de secretário |
+| Desativação | Impede login e invalida sessões existentes; reativação exige novo login |
+| Redefinição | Administrador confere a identidade antes de definir uma nova senha; sessões anteriores deixam de valer |
+| Sessão | Cookie assinado do Flask, duração absoluta de 30 minutos e consulta da conta ativa no backend |
+| Administrador inicial | CLI local com senha oculta e confirmação, sem senha padrão ou cadastro público |
+| Recuperação do administrador | CLI local explícita, preservando a conta e redefinindo seu e-mail/senha |
+| Senhas | Hash Werkzeug; limite técnico de 12–128 caracteres Unicode válidos, sem normalização |
 
-**Aprovado anteriormente:** apenas administrador gerencia contas,
-secretários não gerenciam contas nem ficam restritos a ocorrências do
-próprio bloco; administrador não herda automaticamente ações de
-secretário. A conta administrativa inicial é provisionada com segurança.
+Não fazem parte deste escopo: exclusão física de contas, criação de novos
+administradores, recuperação por e-mail ou alteração de credenciais próprias.
+A conta mantém apenas um contador para invalidar acessos após mudanças de
+credenciais/situação; não existe mais tabela de sessões.
 
-**Ainda a decidir:** identificador de login (o formulário do Figma
-exibe e-mail institucional, ainda como referência), campos e unicidade,
-desativação e bloqueio de sessões ativas, recuperação/redefinição
-segura de senhas, ciclo de sessão, campos visíveis na administração,
-proteção de credenciais e processo inicial. Não gerar login/senha padrão.
-
-**Revisão:** Luís e equipe. **Bloqueia:** modelo definitivo de contas,
-gestão administrativa, autenticação e rotas protegidas.
+**O que falta:** Luís validar os fluxos e a equipe revisar essas escolhas antes
+da integração final. O acabamento dos formulários deve ser alinhado com Mariana.
+Não há dúvida de domínio de e-mail, reativação ou duração de sessão pendente
+para implementar a versão atual. Revisão da equipe não impede o teste local.
 
 ### P10 — Contrato HTTP e proteção antes das rotas
 
-**Protótipo para validação:** rotas JSON de contas podem ser habilitadas
-explicitamente, com CSRF, sessão revogável e autorização no serviço. Por padrão
-continuam ausentes. O módulo não expõe rotas de ocorrências. Integração Jinja,
-limitação de tentativas e configuração de implantação continuam abertas.
+**Escopo de contas definido com Luís em 30/10/2026 e aplicado ao código:**
 
-Fechar payloads, contextos Jinja, filtros, paginação, mensagens, redirects,
-tratamento de erros e eventuais respostas JSON. Definir proteção CSRF para
-POSTs, política de sessão e configuração HTTPS antes de expor mutações.
-Não confundir ocultação de botão com autorização no backend.
+- Formulários HTML renderizados pelo Flask/Jinja; sucesso em POST redireciona
+  com mensagem, erro reexibe campos seguros e nunca a senha.
+- Login/logout e administração usam cookie de sessão do Flask; conta ativa e
+  perfil são verificados no backend. Sessões expiram em 30 minutos.
+- Hash de senha, SQL parametrizado, campos permitidos explícitos e CSRF em
+  formulários que alteram dados são as proteções básicas mantidas.
+- A API JSON e a tabela de sessões do primeiro protótipo foram retiradas.
+- Limitação de tentativas, recuperação automática por e-mail e infraestrutura
+  de publicação não são requisitos desta entrega acadêmica local. Se houver
+  publicação posterior, configuração HTTPS/cookie Secure deve ser revisada.
 
-**Comportamentos do Figma a detalhar no contrato, sem criar P13–P18:**
-modal de escolha de tipo com fechar/voltar; navbar ativa sem repassar
-cliques à tela; navegação e transições; busca por texto/código e filtros
-combinados por tipo, categoria, local e setor; estados vazios; validação,
-mensagens e confirmação do cadastro; explicação pública de status;
-área da secretaria (todos os blocos e "meu setor"); conferência presencial,
-cancelamento, exclusão, resolução e reabertura. Transições visuais não
-comprovam que backend, dados ou autorização estejam implementados.
+**Implementado para avaliar:** telas mínimas de login, sessão, listagem,
+cadastro, edição, ativação/desativação e reset. Não são reprodução final do
+Figma. Mariana continua responsável pela integração visual.
 
-Revisão: Luís e Mariana; André valida a matriz no backend. Rascunhos de
-rotas e convenções de erro estão em [contratos](contratos.md).
+**Permanece aberto para ocorrências:** campos públicos/privados, filtros,
+paginação, contextos Jinja, mensagens e confirmações; integração das regras de
+status/vínculo após as decisões de P01–P08 e os serviços dos responsáveis.
+
+Os comportamentos de referência do Figma continuam para detalhar com os
+responsáveis: escolha PERDIDO/ENCONTRADO, navegação, busca/filtros combinados,
+estados vazios, validação e confirmação de cadastro, explicação de status,
+área da secretaria, conferência presencial, cancelamento, exclusão e reabertura.
+Eles não demonstram implementação nem aprovação automática de regras.
+
+**O que falta:** revisão dos formulários com Mariana e dos fluxos de ocorrência
+com a equipe; André participa da integração. P10 não bloqueia mais o teste do
+módulo de contas. [Contratos](contratos.md) descrevem os caminhos e campos atuais.
 
 ### P11 — Rubrica e detalhes das estruturas manuais
 
@@ -284,10 +295,11 @@ com base apenas nas seleções deste documento.
 | --- | --- | --- |
 | Antes de modelo/formulários/codec finais | P01, P02, identidade em P12 | Lista, AVL, layout com fixtures, testes de cenários |
 | Antes de persistência/mutações integradas | P04, P05, P07, P08 | Algoritmos, adaptadores isolados, autenticação com fakes |
-| Antes de endpoints protegidos | P05, P06, P09, P10 | Templates, serviços testados isoladamente, CLI futura |
+| Antes de integrar rotas protegidas de ocorrências | P05, P06 e parte de ocorrências de P10 | Contas já podem ser testadas; P09/P10 de contas definidos por Luís aguardam revisão coletiva |
 | Antes de matching final e entrega acadêmica | P03, P11, P12 | Integração progressiva dos fluxos já revisados |
 
 Para registrar uma decisão, usar o ID Pxx, texto exato aprovado, data,
 participantes e módulos impactados; atualizar regras/contratos no mesmo PR.
-As seleções de 21/10/2026 permanecem **propostas para decisão da equipe**;
-nenhuma delas foi promovida a regra aprovada por esta atualização.
+As seleções de 21/10 permanecem propostas coletivas. Em 30/10, Luís detalhou
+P09/P10 para implementação na sua branch, conforme registrado acima; não foram
+inventados participantes, reuniões ou aprovações dos demais integrantes.

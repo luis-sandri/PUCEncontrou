@@ -34,10 +34,10 @@ def create_app(config: Mapping[str, Any] | None = None) -> Flask:
         from app.services.contas import ServicoContas
 
         duracao = app.config["CONTAS_DURACAO_SESSAO_SEGUNDOS"]
+        if type(duracao) is not int or duracao <= 0:
+            raise ValueError("A duração da sessão deve ser um inteiro positivo.")
         repositorio = RepositorioContasSQLite(app.config["CONTAS_SQLITE"])
-        app.extensions["autenticacao"] = ServicoAutenticacao(
-            repositorio, duracao_sessao_segundos=duracao
-        )
+        app.extensions["autenticacao"] = ServicoAutenticacao(repositorio)
         app.extensions["contas"] = ServicoContas(repositorio)
         app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(seconds=duracao)
         app.config["SESSION_REFRESH_EACH_REQUEST"] = False

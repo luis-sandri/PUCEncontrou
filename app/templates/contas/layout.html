@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+  <nav class="d-flex gap-3 align-items-center mb-4" aria-label="Área administrativa">
+    {% if ator_atual %}
+      <a href="{{ url_for('autenticacao.consultar_sessao') }}">Minha sessão</a>
+      {% if ator_atual.perfil == 'ADMINISTRADOR' %}
+        <a href="{{ url_for('contas.listar_secretarios') }}">Secretários</a>
+      {% endif %}
+      <form method="post" action="{{ url_for('autenticacao.logout') }}" class="ms-auto">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">Sair</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('autenticacao.login') }}">Entrar</a>
+    {% endif %}
+  </nav>
+  {% for categoria, mensagem in get_flashed_messages(with_categories=true) %}
+    <div class="alert alert-{{ categoria }}" role="status">{{ mensagem }}</div>
+  {% endfor %}
+  {% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+  {% block conteudo_contas %}{% endblock %}
+{% endblock %}

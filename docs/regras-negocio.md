@@ -59,4 +59,6 @@ o responsável pela criação/desvinculação ou os limites de cardinalidade.
 | Criar conta inicial de administrador | Sem endpoint público | Sem endpoint público | Inicialização segura prévia |
 
 O backend deve negar operações não autorizadas. A última linha descreve
-um processo local futuro, não um endpoint ou uma permissão de usuário.
+um processo local pela CLI, não um endpoint ou uma permissão de usuário.
+As escolhas adicionais de Luís para contas e formulários estão registradas
+em P09/P10 de [pendências](pendencias.md), aguardando revisão coletiva.

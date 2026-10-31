@@ -28,6 +28,9 @@ class ContaAdministrativaPorta(Protocol):
     @property
     def ativa(self) -> bool: ...
 
+    @property
+    def versao_sessao(self) -> int: ...
+
 
 class CredenciaisContaPorta(ContaAdministrativaPorta, Protocol):
     """Visão privada do repositório para autenticação; nunca para templates."""
@@ -47,6 +50,7 @@ class ContaAdministrativa:
     nome: str
     identificador: str
     ativa: bool
+    versao_sessao: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +63,7 @@ class CredenciaisConta:
     identificador: str
     ativa: bool
     senha_hash: str = field(repr=False)
+    versao_sessao: int = 0
 
     def para_visao(self) -> ContaAdministrativa:
         return ContaAdministrativa(
@@ -67,4 +72,5 @@ class CredenciaisConta:
             nome=self.nome,
             identificador=self.identificador,
             ativa=self.ativa,
+            versao_sessao=self.versao_sessao,
         )

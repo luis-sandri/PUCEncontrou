@@ -67,11 +67,11 @@ def test_contas_habilitadas_aguardam_bootstrap_sem_criar_dados(tmp_path):
     })
     assert not instancia.config["CONTAS_SQLITE"].exists()
     client = instancia.test_client()
-    csrf = client.get("/login").get_json()["csrf_token"]
+    import re
+    csrf = re.search(r'name="csrf_token" value="([^" ]+)"', client.get("/login").get_data(as_text=True)).group(1)
     resposta = client.post(
         "/login",
-        json={"identificador": "admin.fixture", "senha": "Senha-ficticia-123!"},
-        headers={"X-CSRF-Token": csrf},
+        data={"identificador": "admin@pucpr.edu.br", "senha": "Senha-ficticia-123!", "csrf_token": csrf},
     )
     assert resposta.status_code == 503
     assert not instancia.config["CONTAS_SQLITE"].parent.exists()
@@ -87,9 +87,20 @@ def test_fabricas_contas_nao_compartilham_servicos_ou_dados(tmp_path):
     }) for nome in ("primeira", "segunda")]
     assert primeira.extensions["contas"] is not segunda.extensions["contas"]
     primeira.extensions["autenticacao"].inicializar_administrador(
-        {"nome": "Administrador fictício", "identificador": "admin.fixture"},
+        {"nome": "Administrador fictício", "identificador": "admin@pucpr.edu.br"},
         "Senha-ficticia-123!",
     )
     with pytest.raises(ErroPersistencia):
-        segunda.extensions["autenticacao"].autenticar("admin.fixture", "Senha-ficticia-123!")
+        segunda.extensions["autenticacao"].autenticar("admin@pucpr.edu.br", "Senha-ficticia-123!")
     assert not segunda.config["CONTAS_SQLITE"].exists()
+
+
+@pytest.mark.parametrize("duracao", [0, -1, True, "1800"])
+def test_duracao_sessao_invalida_na_fabrica(tmp_path, duracao):
+    with pytest.raises(ValueError):
+        create_app({
+            "SECRET_KEY": "chave-isolada-de-teste", "CONTAS_HABILITADAS": True,
+            "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
+            "CONTAS_DURACAO_SESSAO_SEGUNDOS": duracao,
+        })
+    assert not (tmp_path / "contas.sqlite3").exists()

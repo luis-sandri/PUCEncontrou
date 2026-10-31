@@ -23,7 +23,7 @@ def app_cli(tmp_path):
     )
 
 
-def _inicializar(app, nome="Administrador de teste", identificador="admin.fixture"):
+def _inicializar(app, nome="Administrador de teste", identificador="admin@pucpr.edu.br"):
     return app.test_cli_runner().invoke(
         args=["contas", "inicializar"],
         input=f"{nome}\n{identificador}\n{SENHA}\n{SENHA}\n",
@@ -37,22 +37,22 @@ def test_bootstrap_e_explicito_pede_confirmacao_e_oculta_senha(app_cli):
     assert SENHA not in resultado.output
     assert app_cli.config["CONTAS_SQLITE"].exists()
     assert not app_cli.config["OCORRENCIAS_JSON"].exists()
-    conta = app_cli.extensions["autenticacao"].autenticar("admin.fixture", SENHA)
+    conta = app_cli.extensions["autenticacao"].autenticar("admin@pucpr.edu.br", SENHA)
     assert conta.perfil.value == "ADMINISTRADOR"
     assert not hasattr(conta, "senha_hash")
 
 
 def test_repetir_bootstrap_nao_cria_novo_admin_nem_substitui_existente(app_cli):
     assert _inicializar(app_cli).exit_code == 0
-    resultado = _inicializar(app_cli, "Outro administrador", "outro.fixture")
+    resultado = _inicializar(app_cli, "Outro administrador", "outro@pucpr.edu.br")
     assert resultado.exit_code != 0
     assert SENHA not in resultado.output
-    original = app_cli.extensions["autenticacao"].autenticar("admin.fixture", SENHA)
+    original = app_cli.extensions["autenticacao"].autenticar("admin@pucpr.edu.br", SENHA)
     assert original.nome == "Administrador de teste"
     from app.erros import FalhaAutenticacao
 
     with pytest.raises(FalhaAutenticacao):
-        app_cli.extensions["autenticacao"].autenticar("outro.fixture", SENHA)
+        app_cli.extensions["autenticacao"].autenticar("outro@pucpr.edu.br", SENHA)
 
 
 def test_bootstrap_nao_aceita_senha_por_opcao(app_cli):
@@ -66,9 +66,35 @@ def test_bootstrap_nao_aceita_senha_por_opcao(app_cli):
 def test_senhas_sem_confirmacao_igual_nao_criam_administrador(app_cli):
     resultado = app_cli.test_cli_runner().invoke(
         args=["contas", "inicializar"],
-        input=f"Administrador de teste\nadmin.fixture\n{SENHA}\nSenha-diferente-123!\n",
+        input=f"Administrador de teste\nadmin@pucpr.edu.br\n{SENHA}\nSenha-diferente-123!\n",
     )
     assert resultado.exit_code != 0
     assert SENHA not in resultado.output
     # O comando não deve chegar ao serviço enquanto a confirmação falhar.
     assert not app_cli.config["CONTAS_SQLITE"].exists()
+
+
+def test_recuperacao_local_exige_confirmacao_e_preserva_identidade(app_cli):
+    assert _inicializar(app_cli).exit_code == 0
+    auth = app_cli.extensions["autenticacao"]
+    original = auth.autenticar("admin@pucpr.edu.br", SENHA)
+    runner = app_cli.test_cli_runner()
+    assert runner.invoke(args=["contas", "recuperar-administrador"], input="n\n").exit_code != 0
+    nova = "Nova-senha-ficticia-5678!"
+    resultado = runner.invoke(
+        args=["contas", "recuperar-administrador"],
+        input=f"y\nrecuperado@pucpr.edu.br\n{nova}\n{nova}\n",
+    )
+    assert resultado.exit_code == 0, resultado.output
+    assert nova not in resultado.output
+    recuperado = auth.autenticar("recuperado@pucpr.edu.br", nova)
+    assert recuperado.id == original.id
+    assert auth.obter_sessao(original.id, original.versao_sessao) is None
+
+
+def test_atualizar_banco_nao_cria_administrador(app_cli):
+    resultado = app_cli.test_cli_runner().invoke(args=["contas", "atualizar-banco"])
+    assert resultado.exit_code == 0, resultado.output
+    from app.erros import FalhaAutenticacao
+    with pytest.raises(FalhaAutenticacao):
+        app_cli.extensions["autenticacao"].autenticar("admin@pucpr.edu.br", SENHA)

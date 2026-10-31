@@ -1,7 +1,6 @@
 """Cenários de contas e sessões de Luís com SQLite fictício e isolado."""
 
 from dataclasses import FrozenInstanceError, asdict, replace
-import hashlib
 
 import pytest
 from werkzeug.security import check_password_hash
@@ -25,14 +24,14 @@ OUTRA_SENHA = "outra-senha-de-teste-5678"
 @pytest.fixture
 def contexto(tmp_path):
     repositorio = RepositorioContasSQLite(tmp_path / "contas.sqlite3")
-    autenticacao = ServicoAutenticacao(repositorio, duracao_sessao_segundos=60)
+    autenticacao = ServicoAutenticacao(repositorio)
     administrador = autenticacao.inicializar_administrador(
-        {"nome": "Admin Fictício", "identificador": "admin-teste"}, SENHA
+        {"nome": "Admin Fictício", "identificador": "admin@pucpr.edu.br"}, SENHA
     )
     return repositorio, autenticacao, ServicoContas(repositorio), administrador
 
 
-def criar_secretario(gestao, administrador, identificador="secretario-teste"):
+def criar_secretario(gestao, administrador, identificador="secretario@pucpr.edu.br"):
     return gestao.cadastrar_secretario(
         {"nome": "Secretário Fictício", "identificador": identificador},
         SENHA,
@@ -42,11 +41,11 @@ def criar_secretario(gestao, administrador, identificador="secretario-teste"):
 
 def test_cria_normaliza_e_autentica_sem_expor_hash(contexto):
     repositorio, autenticacao, gestao, administrador = contexto
-    conta = criar_secretario(gestao, administrador, "  SECRETARIO-TESTE  ")
-    assert conta.identificador == "secretario-teste"
+    conta = criar_secretario(gestao, administrador, "  SECRETARIO@PUCPR.EDU.BR  ")
+    assert conta.identificador == "secretario@pucpr.edu.br"
     assert conta.perfil == Perfil.SECRETARIO
-    assert set(asdict(conta)) == {"id", "perfil", "nome", "identificador", "ativa"}
-    assert autenticacao.autenticar(" SECRETARIO-TESTE ", SENHA) == conta
+    assert set(asdict(conta)) == {"id", "perfil", "nome", "identificador", "ativa", "versao_sessao"}
+    assert autenticacao.autenticar(" SECRETARIO@PUCPR.EDU.BR ", SENHA) == conta
     credenciais = repositorio.buscar_por_id(conta.id)
     assert check_password_hash(credenciais.senha_hash, SENHA)
     assert credenciais.senha_hash not in repr(credenciais)
@@ -59,7 +58,7 @@ def test_identificador_unico_apos_normalizacao(contexto):
     _, _, gestao, administrador = contexto
     criar_secretario(gestao, administrador)
     with pytest.raises(IdentificadorEmUso):
-        criar_secretario(gestao, administrador, " SECRETARIO-TESTE ")
+        criar_secretario(gestao, administrador, " SECRETARIO@PUCPR.EDU.BR ")
 
 
 @pytest.mark.parametrize("ator", [None, "usuario-anonimo"])
@@ -97,7 +96,6 @@ def test_id_inexistente_com_perfil_admin_nao_autoriza(contexto):
         {},
         {"perfil": "ADMINISTRADOR"},
         {"senha_hash": "hash-enviado"},
-        {"ativa": True},
         {"ativa": 0},
         {"nome": "Nome válido", "extra": 1},
         {"identificador": "sem espacos"},
@@ -135,12 +133,12 @@ def test_edita_conta_e_nao_altera_administrador(contexto):
     secretario = criar_secretario(gestao, administrador)
     editado = gestao.gerenciar_secretario(
         secretario.id,
-        {"nome": "  Novo Nome  ", "identificador": "NOVO-LOGIN"},
+        {"nome": "  Novo Nome  ", "identificador": "NOVO@PUCPR.EDU.BR"},
         ator=administrador,
     )
     assert editado.id == secretario.id
     assert editado.nome == "Novo Nome"
-    assert editado.identificador == "novo-login"
+    assert editado.identificador == "novo@pucpr.edu.br"
     assert gestao.listar_secretarios(ator=administrador) == [editado]
     with pytest.raises(ContaNaoEncontrada):
         gestao.gerenciar_secretario(administrador.id, {"nome": "Outro"}, ator=administrador)
@@ -152,8 +150,8 @@ def test_erros_de_login_nao_revelam_causa(contexto):
     mensagens = []
     for identificador, senha in [
         ("inexistente", SENHA),
-        ("secretario-teste", OUTRA_SENHA),
-        ("secretario-teste", "curta"),
+        ("secretario@pucpr.edu.br", OUTRA_SENHA),
+        ("secretario@pucpr.edu.br", "curta"),
         (None, SENHA),
     ]:
         with pytest.raises(FalhaAutenticacao) as erro:
@@ -161,7 +159,7 @@ def test_erros_de_login_nao_revelam_causa(contexto):
         mensagens.append(str(erro.value))
     gestao.gerenciar_secretario(secretario.id, {"ativa": False}, ator=administrador)
     with pytest.raises(FalhaAutenticacao) as erro:
-        autenticacao.autenticar("secretario-teste", SENHA)
+        autenticacao.autenticar("secretario@pucpr.edu.br", SENHA)
     mensagens.append(str(erro.value))
     assert len(set(mensagens)) == 1
 
@@ -170,30 +168,30 @@ def test_senha_nao_e_cortada_ou_normalizada(contexto):
     _, autenticacao, gestao, administrador = contexto
     senha = "  senha-com-espacos-1234  "
     conta = gestao.cadastrar_secretario(
-        {"nome": "Conta Fictícia", "identificador": "espacos"},
+        {"nome": "Conta Fictícia", "identificador": "espacos@pucpr.edu.br"},
         senha,
         ator=administrador,
     )
-    assert autenticacao.autenticar("espacos", senha) == conta
+    assert autenticacao.autenticar("espacos@pucpr.edu.br", senha) == conta
     with pytest.raises(FalhaAutenticacao):
-        autenticacao.autenticar("espacos", senha.strip())
+        autenticacao.autenticar("espacos@pucpr.edu.br", senha.strip())
 
 
 def test_senha_unicode_invalida_nao_cria_conta(contexto):
     repositorio, _, gestao, administrador = contexto
     with pytest.raises(ErroValidacao, match="Unicode"):
         gestao.cadastrar_secretario(
-            {"nome": "Conta Fictícia", "identificador": "unicode-invalido"},
+            {"nome": "Conta Fictícia", "identificador": "unicode@pucpr.edu.br"},
             "\ud800" * 12,
             ator=administrador,
         )
-    assert repositorio.buscar_por_identificador("unicode-invalido") is None
+    assert repositorio.buscar_por_identificador("unicode@pucpr.edu.br") is None
 
 
 def test_reset_unicode_invalido_preserva_credenciais_e_sessao(contexto):
     repositorio, autenticacao, gestao, administrador = contexto
     secretario = criar_secretario(gestao, administrador)
-    _, token = autenticacao.iniciar_sessao("secretario-teste", SENHA)
+    versao = secretario.versao_sessao
     antes = repositorio.buscar_por_id(secretario.id)
     with pytest.raises(ErroValidacao, match="Unicode"):
         gestao.gerenciar_secretario(
@@ -202,50 +200,49 @@ def test_reset_unicode_invalido_preserva_credenciais_e_sessao(contexto):
             ator=administrador,
         )
     assert repositorio.buscar_por_id(secretario.id) == antes
-    assert autenticacao.obter_sessao(token) == secretario
-    assert autenticacao.autenticar("secretario-teste", SENHA) == secretario
+    assert autenticacao.obter_sessao(secretario.id, versao) == secretario
+    assert autenticacao.autenticar("secretario@pucpr.edu.br", SENHA) == secretario
 
 
-def test_sessao_hash_expiracao_e_logout(contexto, monkeypatch):
-    repositorio, autenticacao, gestao, administrador = contexto
-    secretario = criar_secretario(gestao, administrador)
-    monkeypatch.setattr("app.services.autenticacao.time.time", lambda: 1000)
-    conta, token = autenticacao.iniciar_sessao("secretario-teste", SENHA)
-    assert conta == secretario
-    assert len(token) == 43
-    token_hash = hashlib.sha256(token.encode("ascii")).hexdigest()
-    assert repositorio.buscar_sessao(token_hash, 1000).id == secretario.id
-    assert repositorio.buscar_sessao(token, 1000) is None
-    assert autenticacao.obter_sessao(token) == secretario
-    monkeypatch.setattr("app.services.autenticacao.time.time", lambda: 1060)
-    assert autenticacao.obter_sessao(token) is None
-    monkeypatch.setattr("app.services.autenticacao.time.time", lambda: 1000)
-    autenticacao.encerrar_sessao(token)
-    assert autenticacao.obter_sessao(token) is None
-    assert autenticacao.obter_sessao("token-inválido") is None
-
-
-def test_reset_revoga_todas_sessoes_e_invalida_senha_anterior(contexto):
+def test_reset_invalida_sessao_e_senha_anterior(contexto):
     _, autenticacao, gestao, administrador = contexto
     secretario = criar_secretario(gestao, administrador)
-    _, token_um = autenticacao.iniciar_sessao("secretario-teste", SENHA)
-    _, token_dois = autenticacao.iniciar_sessao("secretario-teste", SENHA)
     gestao.gerenciar_secretario(secretario.id, {"senha": OUTRA_SENHA}, ator=administrador)
-    assert autenticacao.obter_sessao(token_um) is None
-    assert autenticacao.obter_sessao(token_dois) is None
+    assert autenticacao.obter_sessao(secretario.id, secretario.versao_sessao) is None
     with pytest.raises(FalhaAutenticacao):
-        autenticacao.autenticar("secretario-teste", SENHA)
-    assert autenticacao.autenticar("secretario-teste", OUTRA_SENHA).id == secretario.id
+        autenticacao.autenticar(secretario.identificador, SENHA)
+    assert autenticacao.autenticar(secretario.identificador, OUTRA_SENHA).id == secretario.id
 
 
-def test_desativacao_revoga_sessao_e_recusa_login(contexto):
+def test_desativar_e_reativar_nao_restaura_sessoes_antigas(contexto):
     _, autenticacao, gestao, administrador = contexto
     secretario = criar_secretario(gestao, administrador)
-    _, token = autenticacao.iniciar_sessao("secretario-teste", SENHA)
     gestao.gerenciar_secretario(secretario.id, {"ativa": False}, ator=administrador)
-    assert autenticacao.obter_sessao(token) is None
+    assert autenticacao.obter_sessao(secretario.id, secretario.versao_sessao) is None
     with pytest.raises(FalhaAutenticacao):
-        autenticacao.iniciar_sessao("secretario-teste", SENHA)
+        autenticacao.autenticar(secretario.identificador, SENHA)
+    reativado = gestao.gerenciar_secretario(secretario.id, {"ativa": True}, ator=administrador)
+    assert reativado.ativa
+    assert autenticacao.obter_sessao(secretario.id, secretario.versao_sessao) is None
+    assert autenticacao.autenticar(secretario.identificador, SENHA) == reativado
+
+
+@pytest.mark.parametrize("email", ["nome@gmail.com", "nome@pucpr.br", "nome@pucpr.edu.br.evil", "nome", "@pucpr.edu.br"])
+def test_rejeita_login_fora_dominio_institucional(contexto, email):
+    repo, _, gestao, administrador = contexto
+    with pytest.raises(ErroValidacao):
+        criar_secretario(gestao, administrador, email)
+    assert repo.listar_secretarios() == []
+
+
+def test_recuperacao_local_preserva_admin_e_encerra_sessoes(contexto):
+    _, autenticacao, _, administrador = contexto
+    recuperado = autenticacao.recuperar_administrador("recuperado@pucpr.edu.br", OUTRA_SENHA)
+    assert recuperado.id == administrador.id
+    assert autenticacao.obter_sessao(administrador.id, administrador.versao_sessao) is None
+    with pytest.raises(FalhaAutenticacao):
+        autenticacao.autenticar(administrador.identificador, SENHA)
+    assert autenticacao.autenticar(recuperado.identificador, OUTRA_SENHA) == recuperado
 
 
 def test_bootstrap_sem_conta_padrao_e_sem_repeticao(tmp_path):
@@ -253,18 +250,10 @@ def test_bootstrap_sem_conta_padrao_e_sem_repeticao(tmp_path):
     autenticacao = ServicoAutenticacao(RepositorioContasSQLite(caminho))
     assert not caminho.exists()
     admin = autenticacao.inicializar_administrador(
-        {"nome": "Admin Fictício", "identificador": "admin-teste"}, SENHA
+        {"nome": "Admin Fictício", "identificador": "admin@pucpr.edu.br"}, SENHA
     )
     assert admin.perfil == Perfil.ADMINISTRADOR
     with pytest.raises(ErroValidacao):
         autenticacao.inicializar_administrador(
-            {"nome": "Outro Fictício", "identificador": "outro-admin"}, SENHA
-        )
-
-
-@pytest.mark.parametrize("duracao", [0, -1, True, "1800"])
-def test_duracao_sessao_invalida_rejeitada_sem_acesso_banco(tmp_path, duracao):
-    with pytest.raises(ValueError):
-        ServicoAutenticacao(
-            RepositorioContasSQLite(tmp_path / "inexistente.sqlite3"), duracao
+            {"nome": "Outro Fictício", "identificador": "outro.admin@pucpr.edu.br"}, SENHA
         )

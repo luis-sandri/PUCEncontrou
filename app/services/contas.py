@@ -5,12 +5,13 @@ Somente administradores ativos, confirmados no repositório, gerenciam contas.
 """
 
 from collections.abc import Mapping, Sequence
+import re
 from typing import Protocol
 import unicodedata
 
 from werkzeug.security import generate_password_hash
 
-from app.erros import ErroValidacao, PermissaoNegada
+from app.erros import ContaNaoEncontrada, ErroValidacao, PermissaoNegada
 from app.models.conta import ContaAdministrativa, ContaAdministrativaPorta, Perfil
 from app.repositories.sqlite_contas import RepositorioContasPorta
 
@@ -20,16 +21,18 @@ def _tem_controle(valor: str) -> bool:
 
 
 def normalizar_identificador(valor: object) -> str:
-    """Identificador genérico; não presume um endereço de e-mail institucional."""
+    """E-mail institucional selecionado por Luís, normalizado para unicidade."""
     if not isinstance(valor, str):
         raise ErroValidacao("Informe um identificador de login válido.")
     identificador = valor.strip().casefold()
     if (
-        not 3 <= len(identificador) <= 120
-        or any(caractere.isspace() for caractere in identificador)
-        or _tem_controle(identificador)
+        len(identificador) > 120
+        or re.fullmatch(r"[a-z0-9._%+\-]+@pucpr\.edu\.br", identificador) is None
+        or identificador.startswith(".")
+        or identificador.split("@")[0].endswith(".")
+        or ".." in identificador
     ):
-        raise ErroValidacao("O identificador deve ter de 3 a 120 caracteres, sem espaços.")
+        raise ErroValidacao("Informe um e-mail institucional @pucpr.edu.br válido (até 120 caracteres).")
     return identificador
 
 
@@ -63,6 +66,10 @@ def validar_dados_conta(dados: Mapping[str, object]) -> dict[str, str]:
 
 
 class GestaoContasPorta(Protocol):
+    def obter_secretario(
+        self, conta_id: str, *, ator: ContaAdministrativaPorta
+    ) -> ContaAdministrativaPorta: ...
+
     def listar_secretarios(
         self, *, ator: ContaAdministrativaPorta
     ) -> Sequence[ContaAdministrativaPorta]: ...
@@ -106,6 +113,15 @@ class ServicoContas:
         self._exigir_administrador(ator)
         return self._repositorio.listar_secretarios()
 
+    def obter_secretario(
+        self, conta_id: str, *, ator: ContaAdministrativaPorta
+    ) -> ContaAdministrativa:
+        self._exigir_administrador(ator)
+        conta = self._repositorio.buscar_por_id(conta_id)
+        if conta is None or conta.perfil != Perfil.SECRETARIO:
+            raise ContaNaoEncontrada("Conta de secretário não encontrada.")
+        return conta.para_visao()
+
     def cadastrar_secretario(
         self,
         dados: Mapping[str, object],
@@ -142,9 +158,9 @@ class ServicoContas:
         if "identificador" in alteracoes:
             dados["identificador"] = normalizar_identificador(alteracoes["identificador"])
         if "ativa" in alteracoes:
-            if alteracoes["ativa"] is not False:
-                raise ErroValidacao("Esta versão permite somente desativar a conta.")
-            dados["ativa"] = False
+            if type(alteracoes["ativa"]) is not bool:
+                raise ErroValidacao("Informe um estado de conta válido.")
+            dados["ativa"] = alteracoes["ativa"]
         senha_hash = None
         if "senha" in alteracoes:
             senha_hash = generate_password_hash(validar_senha(alteracoes["senha"]))

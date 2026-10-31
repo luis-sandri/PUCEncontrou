@@ -1,318 +1,243 @@
-"""Fluxos reais do módulo experimental de Luís, com SQLite temporário."""
+"""Formulários reais, sessão Flask e SQLite temporário do módulo de Luís."""
+
+from html.parser import HTMLParser
 
 import pytest
 
 from app import create_app
 from app.erros import ErroPersistencia
 
-
 pytestmark = pytest.mark.integracao
-
 SENHA = "Senha-ficticia-123!"
 NOVA_SENHA = "Outra-senha-ficticia-456!"
+ADMIN = "admin@pucpr.edu.br"
+
+
+class Pagina(HTMLParser):
+    def __init__(self, resposta):
+        super().__init__()
+        self.inputs = []
+        self.links = set()
+        self.feed(resposta.get_data(as_text=True))
+
+    def handle_starttag(self, tag, attrs):
+        dados = dict(attrs)
+        if tag == "input":
+            self.inputs.append(dados)
+        if tag == "a":
+            self.links.add(dados.get("href", ""))
+
+    @property
+    def csrf(self):
+        return next(item["value"] for item in self.inputs if item.get("name") == "csrf_token")
 
 
 @pytest.fixture
 def contas_app(tmp_path):
-    app = create_app(
-        {
-            "TESTING": True,
-            "SECRET_KEY": "chave-isolada-dos-testes-de-contas",
-            "CONTAS_HABILITADAS": True,
-            "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
-            "OCORRENCIAS_JSON": tmp_path / "ocorrencias.json",
-            "SESSION_COOKIE_SECURE": False,
-        }
-    )
+    app = create_app({
+        "TESTING": True, "SECRET_KEY": "chave-isolada-dos-testes-de-contas",
+        "CONTAS_HABILITADAS": True, "CONTAS_SQLITE": tmp_path / "contas.sqlite3",
+        "OCORRENCIAS_JSON": tmp_path / "ocorrencias.json", "SESSION_COOKIE_SECURE": False,
+    })
     resultado = app.test_cli_runner().invoke(
-        args=["contas", "inicializar"],
-        input=f"Admin de teste\nadmin.fixture\n{SENHA}\n{SENHA}\n",
+        args=["contas", "inicializar"], input=f"Admin de teste\n{ADMIN}\n{SENHA}\n{SENHA}\n",
     )
     assert resultado.exit_code == 0, resultado.output
     return app
 
 
-def _entrar(client, identificador="admin.fixture", senha=SENHA):
-    csrf = client.get("/login").get_json()["csrf_token"]
-    resposta = client.post(
-        "/login",
-        json={"identificador": identificador, "senha": senha},
-        headers={"X-CSRF-Token": csrf},
-    )
-    assert resposta.status_code == 200, resposta.get_data(as_text=True)
-    return resposta.get_json()["csrf_token"]
+def _csrf(client, caminho="/login"):
+    return Pagina(client.get(caminho, follow_redirects=True)).csrf
 
 
-def _criar_secretario(client, csrf, identificador="secretario.fixture"):
-    resposta = client.post(
-        "/contas/secretarios",
-        json={"nome": "Secretário de teste", "identificador": identificador, "senha": SENHA},
-        headers={"X-CSRF-Token": csrf},
-    )
-    assert resposta.status_code == 201, resposta.get_data(as_text=True)
-    return resposta.get_json()["conta"]
+def _entrar(client, identificador=ADMIN, senha=SENHA):
+    resposta = client.post("/login", data={
+        "csrf_token": _csrf(client), "identificador": identificador, "senha": senha,
+    })
+    assert resposta.status_code == 303, resposta.get_data(as_text=True)
+    assert resposta.location.endswith("/sessao")
+    return _csrf(client, "/sessao")
 
 
-def _copiar_cookie(app, origem, destino):
-    nome = app.config["SESSION_COOKIE_NAME"]
-    cookie = origem.get_cookie(nome)
-    assert cookie is not None
-    destino.set_cookie(nome, cookie.value)
+def _criar(client, csrf, email="secretario@pucpr.edu.br"):
+    antes = Pagina(client.get("/contas/secretarios")).links
+    resposta = client.post("/contas/secretarios", data={
+        "csrf_token": csrf, "nome": "Secretário fictício", "identificador": email,
+        "senha": SENHA, "confirmacao_senha": SENHA,
+    })
+    assert resposta.status_code == 303, resposta.get_data(as_text=True)
+    depois = Pagina(client.get("/contas/secretarios")).links
+    link = next(link for link in depois - antes if link.endswith("/editar"))
+    return link.removesuffix("/editar")
 
 
-def test_cadastro_consulta_edicao_e_dto_sem_credenciais(contas_app):
+def test_fluxo_cadastro_edicao_e_telas_sem_senha(contas_app):
     client = contas_app.test_client()
     csrf = _entrar(client)
-    conta = _criar_secretario(client, csrf)
-    assert set(conta) == {"id", "nome", "identificador", "perfil", "ativa"}
-    assert conta["perfil"] == "SECRETARIO"
-    assert conta["ativa"] is True
-    resposta = client.patch(
-        f"/contas/secretarios/{conta['id']}",
-        json={"nome": "Nome revisado", "identificador": "Revisado.Fixture"},
-        headers={"X-CSRF-Token": csrf},
-    )
+    caminho = _criar(client, csrf)
+    resposta = client.get(caminho + "/editar")
     assert resposta.status_code == 200
-    atualizada = resposta.get_json()["conta"]
-    assert atualizada["nome"] == "Nome revisado"
-    assert atualizada["identificador"] == "revisado.fixture"
-    listagem = client.get("/contas/secretarios")
-    assert listagem.status_code == 200
-    assert listagem.get_json()["contas"] == [atualizada]
-    assert SENHA not in listagem.get_data(as_text=True)
-    assert "senha_hash" not in listagem.get_data(as_text=True)
+    assert "secretario@pucpr.edu.br" in resposta.get_data(as_text=True)
+    assert SENHA not in resposta.get_data(as_text=True)
+    assert "senha_hash" not in resposta.get_data(as_text=True)
+    assert all(not campo.get("value") for campo in Pagina(resposta).inputs if campo.get("type") == "password")
+    resposta = client.post(caminho + "/editar", data={
+        "csrf_token": csrf, "nome": "Nome revisado", "identificador": "NOVO@PUCPR.EDU.BR",
+    }, follow_redirects=True)
+    assert resposta.status_code == 200
+    assert "Nome revisado" in resposta.get_data(as_text=True)
+    assert "novo@pucpr.edu.br" in resposta.get_data(as_text=True)
     assert not contas_app.config["OCORRENCIAS_JSON"].exists()
 
 
 def test_anonimo_e_secretario_nao_gerenciam_contas(contas_app):
     admin = contas_app.test_client()
-    csrf_admin = _entrar(admin)
-    conta = _criar_secretario(admin, csrf_admin)
+    caminho = _criar(admin, _entrar(admin))
     anonimo = contas_app.test_client()
-    csrf_anonimo = anonimo.get("/login").get_json()["csrf_token"]
-    assert anonimo.get("/contas/secretarios").status_code == 401
-    assert anonimo.post(
-        "/contas/secretarios",
-        json={"nome": "Teste", "identificador": "novo.fixture", "senha": SENHA},
-        headers={"X-CSRF-Token": csrf_anonimo},
-    ).status_code == 401
+    assert anonimo.get("/contas/secretarios").location.endswith("/login")
+    assert anonimo.post(caminho + "/situacao", data={"ativa": "true"}).location.endswith("/login")
     secretario = contas_app.test_client()
-    csrf = _entrar(secretario, conta["identificador"])
+    csrf = _entrar(secretario, "secretario@pucpr.edu.br")
     assert secretario.get("/contas/secretarios").status_code == 403
-    assert secretario.patch(
-        f"/contas/secretarios/{conta['id']}",
-        json={"nome": "Alteração indevida"},
-        headers={"X-CSRF-Token": csrf},
-    ).status_code == 403
+    for acao, dados in [("editar", {"nome": "Outro"}), ("situacao", {"ativa": "false"}), ("senha", {"senha": SENHA, "confirmacao_senha": SENHA})]:
+        assert secretario.post(caminho + "/" + acao, data={"csrf_token": csrf, **dados}).status_code == 403
 
 
-def test_csrf_login_ausente_de_outro_cliente_e_rotacionado(contas_app):
-    client = contas_app.test_client()
-    outro = contas_app.test_client()
-    csrf_antigo = client.get("/login").get_json()["csrf_token"]
-    csrf_outro = outro.get("/login").get_json()["csrf_token"]
-    dados = {"identificador": "admin.fixture", "senha": SENHA}
-    assert client.post("/login", json=dados).status_code == 403
-    assert client.post(
-        "/login", json=dados, headers={"X-CSRF-Token": csrf_outro}
-    ).status_code == 403
-    resposta = client.post(
-        "/login", json=dados, headers={"X-CSRF-Token": csrf_antigo}
-    )
-    assert resposta.status_code == 200
-    csrf_novo = resposta.get_json()["csrf_token"]
-    assert csrf_novo != csrf_antigo
-    assert client.post(
-        "/logout", headers={"X-CSRF-Token": csrf_antigo}
-    ).status_code == 403
-    assert client.get("/sessao").status_code == 200
-    assert client.post("/logout").status_code == 403
-    assert client.post(
-        "/logout", headers={"X-CSRF-Token": csrf_novo}
-    ).status_code == 204
+def test_csrf_ausente_de_outro_cliente_e_rotacao_no_login(contas_app):
+    client, outro = contas_app.test_client(), contas_app.test_client()
+    antigo = _csrf(client)
+    dados = {"identificador": ADMIN, "senha": SENHA}
+    assert client.post("/login", data=dados).status_code == 403
+    assert client.post("/login", data={**dados, "csrf_token": _csrf(outro)}).status_code == 403
+    assert client.post("/login", data={**dados, "csrf_token": antigo}).status_code == 303
+    novo = _csrf(client, "/sessao")
+    assert novo != antigo
+    assert client.post("/logout", data={"csrf_token": antigo}).status_code == 403
+    assert client.post("/logout", data={"csrf_token": novo}).status_code == 303
+    assert client.get("/sessao").location.endswith("/login")
 
 
-def test_logout_revoga_cookie_copiado_no_servidor(contas_app):
-    client = contas_app.test_client()
-    csrf = _entrar(client)
-    replay = contas_app.test_client()
-    _copiar_cookie(contas_app, client, replay)
-    assert replay.get("/sessao").status_code == 200
-    assert client.post(
-        "/logout", headers={"X-CSRF-Token": csrf}
-    ).status_code == 204
-    assert client.get("/sessao").status_code == 401
-    assert replay.get("/sessao").status_code == 401
-
-
-@pytest.mark.parametrize("alteracao", [{"ativa": False}, {"senha": NOVA_SENHA}])
-def test_desativacao_e_reset_revogam_todas_as_sessoes(contas_app, alteracao):
+@pytest.mark.parametrize("acao,dados", [
+    ("situacao", {"ativa": "false"}),
+    ("senha", {"senha": NOVA_SENHA, "confirmacao_senha": NOVA_SENHA}),
+])
+def test_desativacao_e_reset_invalidam_sessoes_em_outros_clientes(contas_app, acao, dados):
     admin = contas_app.test_client()
     csrf = _entrar(admin)
-    conta = _criar_secretario(admin, csrf)
-    primeiro = contas_app.test_client()
-    segundo = contas_app.test_client()
-    _entrar(primeiro, conta["identificador"])
-    _entrar(segundo, conta["identificador"])
-    replay = contas_app.test_client()
-    _copiar_cookie(contas_app, primeiro, replay)
-    assert admin.patch(
-        f"/contas/secretarios/{conta['id']}",
-        json=alteracao,
-        headers={"X-CSRF-Token": csrf},
-    ).status_code == 200
-    for client in (primeiro, segundo, replay):
-        assert client.get("/sessao").status_code == 401
-    novo = contas_app.test_client()
-    token = novo.get("/login").get_json()["csrf_token"]
-    assert novo.post(
-        "/login",
-        json={"identificador": conta["identificador"], "senha": SENHA},
-        headers={"X-CSRF-Token": token},
-    ).status_code == 401
-    if "senha" in alteracao:
-        _entrar(novo, conta["identificador"], NOVA_SENHA)
-
-
-def test_falha_por_identificador_duplicado_nao_troca_senha_nem_revoga_sessao(contas_app):
-    admin = contas_app.test_client()
-    csrf = _entrar(admin)
-    primeira = _criar_secretario(admin, csrf)
-    segunda = _criar_secretario(admin, csrf, "outro.fixture")
-    secretario = contas_app.test_client()
-    _entrar(secretario, primeira["identificador"])
-    resposta = admin.patch(
-        f"/contas/secretarios/{primeira['id']}",
-        json={"identificador": segunda["identificador"], "senha": NOVA_SENHA},
-        headers={"X-CSRF-Token": csrf},
-    )
-    assert resposta.status_code == 409
-    assert secretario.get("/sessao").status_code == 200
-    _entrar(contas_app.test_client(), primeira["identificador"], SENHA)
-
-
-@pytest.mark.parametrize("extra", [{"perfil": "ADMINISTRADOR"}, {"ator": "admin.fixture"}, {"senha_hash": "injetado"}])
-def test_payload_nao_concede_permissoes_nem_aceita_hash(contas_app, extra):
-    admin = contas_app.test_client()
-    csrf = _entrar(admin)
-    resposta = admin.post(
-        "/contas/secretarios",
-        json={"nome": "Teste", "identificador": "novo.fixture", "senha": SENHA, **extra},
-        headers={"X-CSRF-Token": csrf},
-    )
-    assert resposta.status_code == 400
-    assert admin.get("/contas/secretarios").get_json()["contas"] == []
-
-
-def test_erros_de_entrada_e_alvo_inexistente(contas_app):
-    admin = contas_app.test_client()
-    csrf = _entrar(admin)
-    headers = {"X-CSRF-Token": csrf}
-    assert admin.post(
-        "/contas/secretarios", json=["nao-e-objeto"], headers=headers
-    ).status_code == 400
-    assert admin.post(
-        "/contas/secretarios", data="{", content_type="application/json", headers=headers
-    ).status_code == 400
-    assert admin.post(
-        "/contas/secretarios", data="nome=Teste", headers=headers
-    ).status_code == 415
-    assert admin.patch(
-        "/contas/secretarios/id-inexistente", json={"nome": "Teste"}, headers=headers
-    ).status_code == 404
-
-
-@pytest.mark.parametrize("operacao", ["cadastro", "reset"])
-def test_senha_unicode_invalida_nao_grava_nem_revoga_sessao(contas_app, operacao):
-    admin = contas_app.test_client()
-    csrf = _entrar(admin)
-    conta = _criar_secretario(admin, csrf)
-    secretario = contas_app.test_client()
-    _entrar(secretario, conta["identificador"])
-    headers = {"X-CSRF-Token": csrf}
-    # JSON permite a sequência escapada, mas ela não representa texto UTF-8 válido.
-    senha_invalida = "\ud800" * 12
-    if operacao == "cadastro":
-        resposta = admin.post(
-            "/contas/secretarios",
-            json={
-                "nome": "Conta inválida",
-                "identificador": "invalida.fixture",
-                "senha": senha_invalida,
-            },
-            headers=headers,
-        )
+    caminho = _criar(admin, csrf)
+    primeiro, segundo = contas_app.test_client(), contas_app.test_client()
+    _entrar(primeiro, "secretario@pucpr.edu.br")
+    _entrar(segundo, "secretario@pucpr.edu.br")
+    assert admin.post(caminho + "/" + acao, data={"csrf_token": csrf, **dados}).status_code == 303
+    for client in (primeiro, segundo):
+        assert client.get("/sessao").location.endswith("/login")
+    assert primeiro.post("/login", data={
+        "csrf_token": _csrf(primeiro), "identificador": "secretario@pucpr.edu.br", "senha": SENHA,
+    }).status_code == 401
+    if acao == "senha":
+        _entrar(primeiro, "secretario@pucpr.edu.br", NOVA_SENHA)
     else:
-        resposta = admin.patch(
-            f"/contas/secretarios/{conta['id']}",
-            json={"nome": "Nome que não deve ser gravado", "senha": senha_invalida},
-            headers=headers,
-        )
-    assert resposta.status_code == 400
-    assert admin.get("/contas/secretarios").get_json()["contas"] == [conta]
-    assert secretario.get("/sessao").status_code == 200
-    _entrar(contas_app.test_client(), conta["identificador"], SENHA)
+        assert admin.post(caminho + "/situacao", data={"csrf_token": csrf, "ativa": "true"}).status_code == 303
+        _entrar(primeiro, "secretario@pucpr.edu.br")
 
 
-def test_falha_de_login_nao_revela_se_identificador_existe(contas_app):
-    respostas = []
-    for identificador in ("admin.fixture", "inexistente.fixture"):
-        client = contas_app.test_client()
-        csrf = client.get("/login").get_json()["csrf_token"]
-        resposta = client.post(
-            "/login",
-            json={"identificador": identificador, "senha": "Senha-incorreta-123!"},
-            headers={"X-CSRF-Token": csrf},
-        )
-        assert resposta.status_code == 401
-        respostas.append(resposta.get_json())
-    assert respostas[0] == respostas[1]
-
-
-def test_erro_de_persistencia_publico_nao_expoe_caminho_ou_detalhes(contas_app, monkeypatch):
+def test_expiracao_absoluta_e_cookie_sem_credenciais(contas_app, monkeypatch):
     client = contas_app.test_client()
     _entrar(client)
+    with client.session_transaction() as sessao:
+        expira_em = sessao["expira_em"]
+        assert set(sessao) == {"_permanent", "conta_id", "versao_sessao", "expira_em", "csrf_token"}
+        assert SENHA not in sessao.values()
+    monkeypatch.setattr("app.routes.seguranca.time.time", lambda: expira_em)
+    assert client.get("/sessao").location.endswith("/login")
 
+
+@pytest.mark.parametrize("extra", [{"perfil": "ADMINISTRADOR"}, {"ator": "admin"}, {"senha_hash": "injetado"}])
+def test_campos_extras_recusados(contas_app, extra):
+    client = contas_app.test_client()
+    csrf = _entrar(client)
+    resposta = client.post("/contas/secretarios", data={
+        "csrf_token": csrf, "nome": "Teste", "identificador": "novo@pucpr.edu.br",
+        "senha": SENHA, "confirmacao_senha": SENHA, **extra,
+    })
+    assert resposta.status_code == 400
+    assert "Nenhum secretário" in client.get("/contas/secretarios").get_data(as_text=True)
+
+
+def test_erro_preserva_campos_seguros_e_escapa_html(contas_app):
+    client = contas_app.test_client()
+    csrf = _entrar(client)
+    resposta = client.post("/contas/secretarios", data={
+        "csrf_token": csrf, "nome": '<script>alert("x")</script>', "identificador": "invalido@gmail.com",
+        "senha": SENHA, "confirmacao_senha": SENHA,
+    })
+    assert resposta.status_code == 400
+    html = resposta.get_data(as_text=True)
+    assert "@pucpr.edu.br" in html
+    assert "invalido@gmail.com" in html
+    assert "<script>alert" not in html
+    assert SENHA not in html
+    assert "&lt;script&gt;" in html
+
+
+def test_duplicidade_nao_altera_credenciais_nem_invalida_sessao(contas_app):
+    admin = contas_app.test_client()
+    csrf = _entrar(admin)
+    caminho = _criar(admin, csrf)
+    _criar(admin, csrf, "ocupado@pucpr.edu.br")
+    secretario = contas_app.test_client()
+    _entrar(secretario, "secretario@pucpr.edu.br")
+    resposta = admin.post(caminho + "/editar", data={
+        "csrf_token": csrf, "nome": "Outro", "identificador": "ocupado@pucpr.edu.br",
+    })
+    assert resposta.status_code == 409
+    assert secretario.get("/sessao").status_code == 200
+    _entrar(contas_app.test_client(), "secretario@pucpr.edu.br")
+
+
+def test_confirmacao_senha_incorreta_nao_grava(contas_app):
+    client = contas_app.test_client()
+    csrf = _entrar(client)
+    resposta = client.post("/contas/secretarios", data={
+        "csrf_token": csrf, "nome": "Teste", "identificador": "novo@pucpr.edu.br",
+        "senha": SENHA, "confirmacao_senha": "Diferente-123456!",
+    })
+    assert resposta.status_code == 400
+    assert "não confere" in resposta.get_data(as_text=True)
+    assert "Nenhum secretário" in client.get("/contas/secretarios").get_data(as_text=True)
+
+
+def test_persistencia_indisponivel_nao_expoe_detalhes(contas_app, monkeypatch):
+    client = contas_app.test_client()
+    _entrar(client)
     def falhar(*, ator):
-        raise ErroPersistencia("/pasta/privada/banco.sqlite3: SQL e dados internos")
-
+        raise ErroPersistencia("/pasta/privada/banco.sqlite3: SQL interno")
     monkeypatch.setattr(contas_app.extensions["contas"], "listar_secretarios", falhar)
     resposta = client.get("/contas/secretarios")
     assert resposta.status_code == 503
-    assert set(resposta.get_json()) == {"erro"}
-    assert "sqlite" not in resposta.get_data(as_text=True).lower()
     assert "privada" not in resposta.get_data(as_text=True)
+    assert "SQL interno" not in resposta.get_data(as_text=True)
 
 
-def test_modulo_nao_habilita_ocorrencias_ou_cadastro_publico_de_admin(contas_app):
+def test_corpo_excessivo_e_contrato_html(contas_app):
     client = contas_app.test_client()
+    csrf = _entrar(client)
+    resposta = client.post("/contas/secretarios", data={"csrf_token": csrf, "nome": "x" * 17000})
+    assert resposta.status_code == 413
+    resposta = client.get("/contas/secretarios")
+    assert resposta.mimetype == "text/html"
+    assert resposta.headers["Cache-Control"] == "no-store"
+    assert client.patch("/contas/secretarios/id").status_code == 404
     for caminho in ("/ocorrencias", "/contas/administradores"):
         assert client.get(caminho).status_code == 404
 
 
-def test_cookie_so_contem_tokens_e_respostas_nao_sao_cacheadas(contas_app):
-    client = contas_app.test_client()
-    resposta = client.get("/login")
-    assert "HttpOnly" in resposta.headers["Set-Cookie"]
-    assert "SameSite=Lax" in resposta.headers["Set-Cookie"]
-    _entrar(client)
-    resposta = client.get("/sessao")
-    assert resposta.headers["Cache-Control"] == "no-store"
-    assert resposta.headers["X-Content-Type-Options"] == "nosniff"
-    with client.session_transaction() as sessao:
-        assert set(sessao) == {"_permanent", "conta_token", "csrf_token"}
-        assert len(sessao["conta_token"]) == 43
-        assert resposta.get_json()["conta"]["id"] not in sessao.values()
-
-
-def test_corpo_excessivo_e_rejeitado_sem_criar_conta(contas_app):
+def test_mutacoes_exigem_formulario_post(contas_app):
     client = contas_app.test_client()
     csrf = _entrar(client)
-    resposta = client.post(
-        "/contas/secretarios",
-        json={"nome": "x" * (17 * 1024)},
-        headers={"X-CSRF-Token": csrf},
-    )
-    assert resposta.status_code == 413
-    assert client.get("/contas/secretarios").get_json()["contas"] == []
-
+    caminho = _criar(client, csrf)
+    for acao in ("situacao", "senha"):
+        assert client.get(caminho + "/" + acao).status_code == 405
+    assert client.get("/logout").status_code == 405
+    assert client.post("/contas/secretarios", json={"csrf_token": csrf}).status_code == 415
+    assert client.get("/sessao").status_code == 200

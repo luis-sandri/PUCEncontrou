@@ -5,9 +5,9 @@ integrantes para uma disciplina de Engenharia de Software.
 
 **Etapa atual:** aplicação Flask mínima executável e contratos preliminares.
 Por padrão, somente `GET /` e arquivos estáticos estão disponíveis.
-Esta branch acrescenta o **backend experimental de Luís**: contas em SQLite,
-autenticação, sessões, gestão de secretários e inicialização por CLI, ativados
-explicitamente para revisão de P09/P10. Consulte o
+Esta branch acrescenta o **módulo de contas de Luís**: contas em SQLite,
+autenticação simples, formulários Jinja, gestão de secretários e CLI local,
+ativados explicitamente para avaliação das escolhas de P09/P10 definidas por Luís. Consulte o
 [guia de validação](docs/desenvolvimento-luis.md). Ocorrências, estruturas
 acadêmicas, JSON, consultas e correspondência continuam com seus responsáveis.
 
@@ -52,7 +52,7 @@ Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 
 Os testes verificam a base, o isolamento e a ausência de endpoints de negócio
 por padrão, além do módulo optativo de contas: SQLite temporário, autorização,
-CSRF, sessões, revogação, falhas transacionais e CLI sem senha na saída.
+CSRF, sessão Flask, reativação, migração, falhas transacionais e CLI sem senha na saída.
 Consulte [a organização dos testes](tests/README.md).
 
 O VS Code oferece extensões recomendadas, descoberta de pytest e execução
@@ -74,9 +74,9 @@ app/
   static/                CSS, JavaScript e imagens (Mariana)
 tests/                   unidade por módulo; integração com André
 docs/                    decisões, contratos, pendências e análise
-scripts/                 espaço para inicialização segura futura
+scripts/                 instruções da CLI administrativa
 .vscode/                 configuração compartilhável
-instance/                dados locais futuros, ignorados pelo Git
+instance/                dados locais, ignorados pelo Git
 ```
 
 As classes terminadas em `Porta` são `typing.Protocol`: descrevem
@@ -108,16 +108,22 @@ foram selecionadas as seguintes propostas: data de perda/achado para a AVL;
 pontuação inicial de correspondência **somente para testes**; exclusão
 física; vínculo 1:1 criado por secretário; justificativa obrigatória
 para cancelar; gestão de contas de secretário com cadastro, edição,
-desativação e redefinição de senha. **Nenhuma dessas seleções é ainda
+desativação, reativação e redefinição de senha. **Nenhuma dessas seleções é ainda
 aprovação coletiva**, e os efeitos e contratos pendentes constam em
 [pendências](docs/pendencias.md). Não há entrevistas ou dados reais incluídos nesta base.
 Contas, hashes, arquivos locais e segredos não devem entrar no Git. Nenhuma
 alteração de Jira, publicação, commit ou push faz parte desta preparação.
 
-Na branch de Luís, os campos de conta e o contrato HTTP têm uma implementação
-experimental isolada para avaliação. Isso não altera o estado das decisões
-coletivas em [pendências](docs/pendencias.md). As telas de autenticação e gestão
-continuam sob coordenação de Mariana; o módulo entrega respostas JSON.
+Em 30/10/2026, Luís definiu nome, e-mail institucional `@pucpr.edu.br`,
+reativação, sessão de 30 minutos e recuperação local para seu módulo de contas.
+P10 foi simplificado para formulários Flask/Jinja e sessão nativa do Flask;
+a API JSON e a tabela de sessões foram removidas. As decisões estão em
+[pendências](docs/pendencias.md), sem registrar aprovação coletiva inexistente.
+As telas mínimas permitem testar `/login` e a gestão de secretários; Mariana
+continua responsável pelo acabamento visual.
+
+**Se já usou o banco do protótipo anterior**, consulte a
+[migração v1→v2 e recuperação de acesso](docs/desenvolvimento-luis.md).
 
 ## Referências técnicas
 
