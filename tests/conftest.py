@@ -12,6 +12,7 @@ def app(tmp_path):
             "TESTING": True,
             "SECRET_KEY": "chave-exclusiva-de-teste-sem-uso-real",
             "CONTAS_HABILITADAS": False,
+            "OCORRENCIAS_HABILITADAS": False,
             "OCORRENCIAS_JSON": tmp_path / "ocorrencias.json",
             "CONTAS_JSON": tmp_path / "contas.json",
         }

@@ -1,11 +1,11 @@
-"""Esboço de CRUD e regras; Marcelo e Luís revisam antes da integração.
+"""Portas externas; a fronteira HTTP concreta de Luís está em atendimento_ocorrencias.
 
-Mapping é temporário, até os campos e DTOs serem aprovados. Não autoriza
-repassar request.form sem conversão e validação. Não há CRUD implementado.
+O núcleo de Marcelo mantém as operações de domínio. Entrada e autorização
+são aplicadas antes de delegar lotes; não repassar request.form integralmente.
 """
 
 from collections.abc import Iterable, Mapping
-from typing import Protocol
+from typing import BinaryIO, Protocol
 
 from app.models.conta import ContaAdministrativaPorta
 from app.models.ocorrencia import OcorrenciaPorta, StatusOcorrencia
@@ -22,7 +22,9 @@ class LeituraOcorrenciasPorta(Protocol):
 
 
 class ServicoOcorrenciasPorta(LeituraOcorrenciasPorta, Protocol):
-    def cadastrar(self, dados: Mapping[str, object]) -> OcorrenciaPorta: ...
+    def cadastrar(
+        self, dados: Mapping[str, object], *, foto: BinaryIO | None
+    ) -> OcorrenciaPorta: ...
 
     def editar(
         self,
@@ -30,10 +32,11 @@ class ServicoOcorrenciasPorta(LeituraOcorrenciasPorta, Protocol):
         dados: Mapping[str, object],
         *,
         ator: ContaAdministrativaPorta,
+        foto: BinaryIO | None = None,
     ) -> OcorrenciaPorta: ...
 
     def excluir(
-        self, ocorrencia_id: str, *, ator: ContaAdministrativaPorta
+        self, ocorrencia_id: str, *, ator: ContaAdministrativaPorta, confirmacao: bool = False
     ) -> None: ...
 
     def alterar_status(

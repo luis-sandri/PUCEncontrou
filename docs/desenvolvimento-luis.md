@@ -1,4 +1,4 @@
-# Módulo de contas de Luís: validação local
+# Módulos de Luís: contas e fronteira de ocorrências
 
 Branch: `feat/luis-contas-autenticacao`. Em 30/10/2026, Luís definiu P09 e o
 escopo simplificado de P10 nesta conversa e autorizou aplicar ao código.
@@ -7,6 +7,17 @@ O domínio **`@pucpr.edu.br`** foi confirmado expressamente. O registro em
 
 O foco acadêmico continua sendo a Lista Dinâmica baseada em array e a AVL
 manuais. Contas e autenticação dão suporte à aplicação com Flask/Jinja e JSON local.
+
+## Conclusão da fronteira de ocorrências — 02/11/2026
+
+Luís concluiu rotas, autorização, formulários, validação de fotos e ponto de
+composição. Contas continuam utilizáveis como descrito abaixo. Para ocorrências,
+a fábrica aguarda dependências concretas da carga/armazenamento de produção dos
+colegas; não foi criada uma implementação fictícia para ativar o sistema.
+Veja [integração de ocorrências](integracao-ocorrencias.md), com os contratos,
+as escolhas confirmadas por Luís em 02/11 e as dependências externas restantes.
+A ferramenta de navegador não estava disponível para a conferência visual;
+os fluxos HTML foram verificados por testes, inclusive com núcleo publicado.
 
 ## O que está disponível
 
@@ -18,8 +29,9 @@ manuais. Contas e autenticação dão suporte à aplicação com Flask/Jinja e J
 - Senhas com hash Werkzeug, JSON validado e dados locais fora do Git.
 - CLI para criar o primeiro administrador, preparar JSON, importar legado e recuperar o acesso local.
 
-A fábrica não acessa persistência. O módulo continua habilitado explicitamente;
-não compõe ocorrências, Lista, AVL, JSON ou correspondência. Templates mínimos
+No modo mínimo e de contas, a fábrica não acessa persistência. Ao habilitar
+ocorrências, chama o compositor externo para carregar seus componentes reais.
+A Lista/AVL/JSON e a correspondência continuam com os responsáveis. Templates mínimos
 permitem testar os fluxos; o acabamento visual segue com Mariana. `base.html` e
 os arquivos estáticos existentes foram preservados.
 

@@ -9,8 +9,8 @@ from flask import current_app, g, redirect, render_template, request, session, u
 from werkzeug.exceptions import HTTPException, UnsupportedMediaType
 
 from app.erros import (
-    ContaNaoEncontrada, ErroPersistencia, ErroValidacao, FalhaAutenticacao,
-    IdentificadorEmUso, PermissaoNegada,
+    ConflitoAlteracao, ContaNaoEncontrada, ErroPersistencia, ErroValidacao, FalhaAutenticacao,
+    IdentificadorEmUso, OcorrenciaNaoEncontrada, PermissaoNegada,
 )
 
 
@@ -47,14 +47,16 @@ def verificar_csrf():
         raise PermissaoNegada("Formulário expirado ou inválido. Recarregue a página.")
 
 
-def dados_formulario(campos):
+def dados_formulario(campos, *, arquivos=()):
     if request.mimetype not in {"application/x-www-form-urlencoded", "multipart/form-data"}:
         raise UnsupportedMediaType()
     verificar_csrf()
-    if request.files or set(request.form) - (set(campos) | {"csrf_token"}):
+    if set(request.files) - set(arquivos) or set(request.form) - (set(campos) | {"csrf_token"}):
         raise ErroValidacao("Campo não permitido.")
     if any(len(request.form.getlist(campo)) != 1 for campo in request.form):
         raise ErroValidacao("Campo repetido no formulário.")
+    if any(len(request.files.getlist(campo)) != 1 for campo in request.files):
+        raise ErroValidacao("Arquivo repetido no formulário.")
     return {campo: request.form[campo] for campo in campos if campo in request.form}
 
 
@@ -67,10 +69,10 @@ def exigir_autenticacao(funcao):
     return protegida
 
 
-def configurar_blueprint(bp):
+def configurar_blueprint(bp, *, limite_corpo=16 * 1024):
     @bp.before_request
     def carregar_ator():
-        request.max_content_length = 16 * 1024
+        request.max_content_length = limite_corpo() if callable(limite_corpo) else limite_corpo
         g.ator = None
         conta_id = session.get("conta_id")
         if conta_id is not None:
@@ -95,10 +97,11 @@ def configurar_blueprint(bp):
 
     for erro, status in (
         (ErroValidacao, 400), (FalhaAutenticacao, 401), (PermissaoNegada, 403),
-        (ContaNaoEncontrada, 404), (IdentificadorEmUso, 409), (ErroPersistencia, 503),
+        (ContaNaoEncontrada, 404), (OcorrenciaNaoEncontrada, 404),
+        (IdentificadorEmUso, 409), (ConflitoAlteracao, 409), (ErroPersistencia, 503),
     ):
         def tratar(exc, codigo=status):
-            mensagem = "Serviço de contas indisponível." if isinstance(exc, ErroPersistencia) else str(exc)
+            mensagem = "Serviço indisponível. Tente novamente mais tarde." if isinstance(exc, ErroPersistencia) else str(exc)
             return render_template("contas/erro.html", mensagem=mensagem), codigo
         bp.register_error_handler(erro, tratar)
 

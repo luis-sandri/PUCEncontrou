@@ -1,5 +1,19 @@
 # Arquitetura e desenvolvimento em paralelo
 
+## Entrega da fronteira de Luís — 02/11/2026
+
+`AtendimentoOcorrencias` envolve o núcleo de Marcelo com autorização e uploads;
+`routes/ocorrencias.py` entrega os formulários e projeta os dados públicos.
+`FotosLocais` valida bytes JPEG/PNG até 1,5 MB e guarda arquivos fora de `static`.
+`app/composicao.py` define o ponto que recebe núcleo/consulta concretos depois
+da carga de produção. A fábrica só registra rotas após essa composição.
+Sem a carga/armazenamento dos responsáveis, o módulo permanece desligado e a
+aplicação mínima continua executável. Não há fallback de produção com fakes.
+
+Luís concluiu sua fronteira, autorização, uploads e ponto de composição.
+A montagem dos componentes de produção, revisão de Mariana e validação manual
+continuam separadas. Consulte [integração](integracao-ocorrencias.md).
+
 ## Alinhamento de persistência e regras — 31/10/2026
 
 Luís solicitou adotar somente os pontos conflitantes das branches de Marcelo:
@@ -32,17 +46,20 @@ descrito abaixo não foi integrado.
 ```mermaid
 flowchart TD
     UI[Templates e interface] --> HTTP[Rotas Flask]
-    HTTP --> SO[Serviço de ocorrências]
-    HTTP --> SC[Consulta por período]
+    HTTP --> SO[Atendimento: autorização e uploads de Luís]
+    SO --> NC[Núcleo de ocorrências de Marcelo]
+    NC --> AR[Armazenamento integrado de Matheus]
+    SO --> SC[Consulta por período]
     HTTP --> SM[Correspondências]
     HTTP --> SA[Autenticação e contas]
+    SO --> RF[Fotos locais de Luís]
     SC --> AV[AVL manual: datas e IDs]
-    SC --> SO
-    SM --> SO
-    SO --> LD[Lista Dinâmica manual: registros]
-    SO --> JR[Repositório JSON]
+    SC --> NC
+    SM --> NC
+    AR --> LD[Lista Dinâmica manual: registros]
+    AR --> JR[Repositório JSON]
     JR --> JF[Arquivo JSON local]
-    SO --> AV
+    AR --> AV
     SA --> SR[Repositório JSON de contas]
     SR --> DB[Arquivo local de contas]
 ```
@@ -118,7 +135,8 @@ sem implementações de outros colegas e sem inicializar dados reais.
 Ainda não são suficientes para integrar formulários reais de ocorrências, JSON definitivo,
 consulta temporal conectada ao modelo ou correspondência pontuada. Esses
 fluxos dependem especialmente de P01–P05 em [pendências](pendencias.md).
-O contrato HTTP é um rascunho documentado; não há endpoints fictícios ativos.
+O HTTP de Luís está implementado, mas só é registrado com dependências
+concretas fornecidas pelo compositor; não há endpoints fictícios ativos por padrão.
 Não há teste de conformidade estática ou de integração funcional dos protocolos
 de ocorrências nesta entrega. O módulo de contas possui seus próprios testes
 de integração com JSON e formulários. Sua aceitação exige revisão e testes pelos responsáveis.

@@ -1,4 +1,4 @@
-# Contratos iniciais v0 e módulo experimental de contas
+# Contratos de integração e módulos de Luís
 
 **Estado: esboços técnicos propostos para revisão dos responsáveis.**
 As regras explicitamente aprovadas estão em [regras de negócio](regras-negocio.md).
@@ -9,7 +9,8 @@ desenvolvimento com fakes, sem implementar os módulos dos colegas.
 Cada `Porta` é um `typing.Protocol`, não uma classe concreta. Ninguém deve
 instanciá-la nem herdar dela para receber uma implementação padrão. A
 implementação futura pode satisfazer o contrato por suas assinaturas.
-Não há validação de conformidade em runtime nesta base.
+Não há verificação completa de assinaturas em runtime. A composição verifica
+o tipo do retorno e os métodos exigidos antes de registrar as rotas.
 
 **Atualização de Luís (30/10/2026):** contas têm contrato executável com
 formulários Jinja e sessão Flask. P09/P10 de contas foram definidos por Luís
@@ -21,7 +22,9 @@ permite testar o módulo. Demais contratos de ocorrências permanecem v0.
 Por solicitação de Luís, contas passam a JSON e as regras conflitantes de
 ocorrências seguem o [contrato de Marcelo](https://github.com/luis-sandri/PUCEncontrou/blob/03fb6fb23b5662587cada2c0b6caf263ef0d7303/docs/scrum-8.md).
 Modelo, codec, lotes e núcleo estão disponíveis nessa branch; esta adequação
-**não importa suas implementações** nem registra rotas de ocorrência.
+**não importa suas implementações**. Em 02/11, a fronteira HTTP foi concluída
+com habilitação condicionada à injeção de núcleo/consulta concretos; ver
+[contrato HTTP e composição](integracao-ocorrencias.md).
 O serviço protegido futuro deve envolver o núcleo, validar autorizações e
 uploads e só então expor operações. A Lista manual e sua integração de produção
 continuam com os respectivos responsáveis.
@@ -31,7 +34,8 @@ local e referência de foto, com foto obrigatória em ambos os tipos; descriçã
 e cor opcionais. Guarda é exclusiva de ENCONTRADO. Vínculo é 1:1 entre tipos
 opostos abertos, com resolução/reabertura conjuntas. Exclusão física limpa o
 vínculo no parceiro sem alterar seus demais dados/status. Cancelamento só de
-ABERTO isolado; justificativa e propagação continuam pendentes.
+ABERTO isolado; em 02/11 Luís escolheu não exigir justificativa por enquanto.
+Propagação de cancelamento de par continua bloqueada.
 
 ## Convenções e composição propostas
 
@@ -187,14 +191,17 @@ inexistentes precisam ser detectados. Não chamar `salvar` ao carregar.
 
 ## Serviço de ocorrências — Marcelo com revisão de Luís
 
-Código: `app/services/ocorrencias.py`.
+Portas em `app/services/ocorrencias.py`; a fronteira concreta de Luís está em
+`app/services/atendimento_ocorrencias.py` e delega o domínio ao núcleo publicado
+de Marcelo. Não instancia os protocolos. Upload passa separado dos dados
+como stream binário, com validação de conteúdo e referência gerada no backend.
 
 ```python
-cadastrar(dados: Mapping[str, object]) -> OcorrenciaPorta
+cadastrar(dados: Mapping[str, object], *, foto: BinaryIO | None) -> OcorrenciaPorta
 obter(ocorrencia_id: str) -> OcorrenciaPorta
 listar(filtros: Mapping[str, object] | None = None) -> Iterable[OcorrenciaPorta]
-editar(ocorrencia_id: str, dados: Mapping[str, object], *, ator: ContaAdministrativaPorta) -> OcorrenciaPorta
-excluir(ocorrencia_id: str, *, ator: ContaAdministrativaPorta) -> None
+editar(ocorrencia_id: str, dados: Mapping[str, object], *, ator: ContaAdministrativaPorta, foto: BinaryIO | None = None) -> OcorrenciaPorta
+excluir(ocorrencia_id: str, *, ator: ContaAdministrativaPorta, confirmacao: bool = False) -> None
 alterar_status(ocorrencia_id: str, novo_status: StatusOcorrencia, *, ator: ContaAdministrativaPorta, contexto: Mapping[str, object]) -> Iterable[OcorrenciaPorta]
 vincular(perdido_id: str, encontrado_id: str, *, ator: ContaAdministrativaPorta) -> Iterable[OcorrenciaPorta]
 ```
@@ -205,9 +212,9 @@ vincular(perdido_id: str, encontrado_id: str, *, ator: ContaAdministrativaPorta)
   restringem bloco. Não deduzir poder de secretário do perfil administrador.
 - `alterar_status` retorna **todos os registros alterados**, incluindo par
   resolvido/reaberto. Não deve permitir mudanças de status por edição de campos.
-- `contexto` reserva confirmação presencial/justificativa; conteúdo e forma
-  de registrar confirmação ainda precisam ser definidos. Receber um boolean
-  do cliente não dispensa identidade, autorização e ação do secretário.
+- `contexto` aceita somente `confirmacao_presencial: bool`; resolver exige
+  `True` e secretário ativo recarregado no backend. Cancelar não exige
+  justificativa nesta etapa, conforme definição de Luís em 02/11.
 - `vincular` não confirma devolução nem altera status automaticamente. A
   autorização de secretário deve ser validada no serviço protegido, conforme
   o desenho SCRUM-8; o núcleo interno não pode ser exposto diretamente.
@@ -359,18 +366,24 @@ Sem login, páginas protegidas redirecionam para `/login` (302). Erros são HTML
 409 e-mail duplicado, 413 corpo excessivo, 415 conteúdo sem formulário, 503
 persistência com mensagem genérica. Respostas do módulo usam `no-store`.
 
-**Ocorrências continuam futuras, sem rotas registradas:**
+**Fronteira de ocorrências concluída em 02/11:** rotas, formulários,
+autorização, uploads e composição estão implementados por Luís. Por padrão,
+continuam desligados; para registrar, a fábrica exige contas habilitadas e
+`OCORRENCIAS_COMPOSITOR` que devolva dependências concretas já carregadas.
+Esse compositor de produção depende dos componentes de Matheus/Leandro e
+não foi substituído por fakes. O núcleo dos colegas não foi copiado nesta branch.
 
-| Fluxo | Caminho/método proposto | Dependências |
-| --- | --- | --- |
-| Listar/detalhar | `GET /ocorrencias`, `GET /ocorrencias/<id>` | Campos públicos, filtros, ordem/paginação |
-| Cadastrar | `GET/POST /ocorrencias/nova` | Modelo, campos e validações |
-| Editar/excluir | `POST /ocorrencias/<id>/editar`, `POST /ocorrencias/<id>/excluir` | Serviço, SECRETARIO e política de exclusão |
-| Status | `POST /ocorrencias/<id>/status` | Confirmação/cancelamento e transições |
-| Vínculo | `POST /ocorrencias/vinculos` | Política P05 e serviço |
+O [contrato de integração](integracao-ocorrencias.md) lista todos os caminhos,
+campos e controles. Inclui cadastro/consulta públicos, detalhe/foto por ID,
+edição/exclusão/status/vínculo de secretário, filtros e período. Fotos JPEG/PNG
+até 1,5 MB e setor de guarda público foram confirmados por Luís em 02/11.
+Erros HTML incluem 404 de ocorrência, 409 de lote obsoleto e 413 de corpo,
+além dos controles de CSRF, sessão e falhas genéricas de persistência.
 
-Esses fluxos aguardam os responsáveis e decisões P01–P08, com proteção no backend.
-[Guia de validação e migração](desenvolvimento-luis.md).
+A carga/publicação coerente de JSON/Lista/AVL de produção continua com os
+responsáveis. O atendimento de Luís não acessa estruturas ou arquivo de
+ocorrências diretamente. A consulta temporal sempre é delegada ao serviço
+injetado; a interface não substitui a AVL por estrutura pronta ou varredura.
 
 ## Erros e revisão de mudanças
 
@@ -378,7 +391,7 @@ Esses fluxos aguardam os responsáveis e decisões P01–P08, com proteção no 
 `OcorrenciaNaoEncontrada`, `PermissaoNegada`, `FalhaAutenticacao`,
 `ErroPersistencia`, mais `ContaNaoEncontrada` e `IdentificadorEmUso` para contas.
 Estruturas usam erros de índice/comparação, sem importar
-erros HTTP. As rotas futuras traduzem erros do serviço para a experiência
+erros HTTP. As rotas traduzem erros do serviço para a experiência
 escolhida, sem expor stack trace ou caminhos internos.
 
 Antes de integrar, responsável e consumidores revisam assinatura, retorno,

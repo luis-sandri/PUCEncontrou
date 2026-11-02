@@ -3,13 +3,16 @@
 Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
-**Etapa atual:** aplicação Flask mínima executável e contratos preliminares.
+**Etapa atual:** base Flask executável, contas e fronteira HTTP de ocorrências de Luís.
 Por padrão, somente `GET /` e arquivos estáticos estão disponíveis.
 Esta branch acrescenta o **módulo de contas de Luís**: contas em JSON,
 autenticação simples, formulários Jinja, gestão de secretários e CLI local,
 ativados explicitamente para avaliação das escolhas de P09/P10 definidas por Luís. Consulte o
 [guia de validação](docs/desenvolvimento-luis.md). Ocorrências, estruturas
-acadêmicas, JSON, consultas e correspondência continuam com seus responsáveis.
+acadêmicas, JSON de ocorrências, consultas e correspondência continuam com seus responsáveis.
+As rotas, autorização, uploads e telas mínimas de ocorrências de Luís estão
+implementados; sua ativação depende da carga/armazenamento concretos dos colegas.
+Veja o [contrato de integração](docs/integracao-ocorrencias.md).
 
 ## Executar no Windows
 
@@ -42,6 +45,7 @@ JSON de contas/ocorrências, administrador ou diretórios de persistência nesta
 O depurador é para uso local. O frontend inicial usa Bootstrap 5.3.8 via
 CDN com integridade; o carregamento desses estilos requer internet.
 JSON faz parte da biblioteca padrão; Jinja2 e Werkzeug vêm com Flask.
+Pillow valida as imagens JPEG/PNG; não implementa estruturas acadêmicas.
 Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 
 ## Testar
@@ -82,9 +86,12 @@ instance/                dados locais, ignorados pelo Git
 As classes terminadas em `Porta` são `typing.Protocol`: descrevem
 assinaturas para consumidores e fakes, não executam funcionalidades e não
 devem ser instanciadas. Não representam a implementação acadêmica de Lista
-ou AVL. Não há composição dos serviços de ocorrências na fábrica. Os serviços
-concretos de contas só são compostos com `PUC_CONTAS_HABILITADAS=true`; nem essa
+ou AVL. A composição de ocorrências exige as dependências concretas do núcleo
+e da consulta; os serviços de contas só são compostos com `PUC_CONTAS_HABILITADAS=true`; nem essa
 composição cria arquivo ou administrador. A CLI explícita prepara o JSON de contas.
+A fronteira de ocorrências só é composta com `PUC_OCORRENCIAS_HABILITADAS=true`,
+contas habilitadas e `PUC_OCORRENCIAS_COMPOSITOR` apontando para dependências
+concretas; não há compositor de produção fictício neste repositório.
 
 ## Começar o trabalho em equipe
 
@@ -110,7 +117,8 @@ física que limpa o vínculo e preserva o parceiro; cancelamento somente de ABER
 isolado. Categorias finais, exposição pública, uploads, justificativa e política
 de cancelamento de pares continuam em revisão, conforme
 [pendências](docs/pendencias.md). Modelo/núcleo/Lista dos colegas permanecem nas
-suas branches; esta adequação não os incorpora nem expõe suas rotas.
+suas branches; esta adequação não os incorpora. A fronteira HTTP de Luís foi concluída
+em 02/11 e aguarda esses componentes reais para ativação integrada.
 Contas, hashes, arquivos locais e segredos não devem entrar no Git. Nenhuma
 alteração de Jira, publicação, commit ou push faz parte desta preparação.
 
@@ -120,7 +128,9 @@ P10 foi simplificado para formulários Flask/Jinja e sessão nativa do Flask;
 a API JSON e a tabela de sessões foram removidas. As decisões estão em
 [pendências](docs/pendencias.md), sem registrar aprovação coletiva inexistente.
 As telas mínimas permitem testar `/login` e a gestão de secretários; Mariana
-continua responsável pelo acabamento visual.
+continua responsável pelo acabamento visual. Em 02/11, Luís confirmou fotos
+JPEG/PNG até 1,5 MB, setor de guarda público e cancelamento isolado sem
+justificativa por enquanto. Rotas de ocorrências e testes constam no guia de integração.
 
 **Se já usou o SQLite do protótipo anterior**, consulte a
 [importação explícita para JSON e recuperação de acesso](docs/desenvolvimento-luis.md).

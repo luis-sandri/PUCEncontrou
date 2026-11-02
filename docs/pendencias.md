@@ -1,5 +1,33 @@
 # Pendências e propostas para revisão da equipe
 
+## Entrega de Luís — 02/11/2026
+
+**Implementado nesta branch:** rotas de ocorrências com formulários Jinja,
+cadastro/consulta públicos, filtros e período delegados à consulta injetada,
+projeções públicas sem dados internos, fotos por ID opaco, autorização de
+secretário recarregada no backend, edição, exclusão confirmada, vínculo,
+resolução com conferência presencial, reabertura e cancelamento isolado.
+A fábrica compõe esse serviço somente por habilitação explícita e com um
+compositor que forneça núcleo e consulta concretos. Não instancia protocolos.
+
+**Decisões de Luís nesta conversa:** JPEG/PNG até 1,5 MB; setor de guarda
+público; cancelamento de ABERTO sem vínculo **sem justificativa por enquanto**.
+A proposta antiga de justificativa obrigatória foi superada para esta entrega.
+P01/P06/P10 abaixo refletem essas respostas, sem inventar validação coletiva.
+
+**Dependências externas reais:** repositório de ocorrências, carregamento e
+publicação coerente de Lista/AVL/JSON (Matheus, SCRUM-13), consulta concreta
+por período (Leandro) e incorporação das branches publicadas de modelo/núcleo
+e estruturas. Nesta branch continuam como contratos dos responsáveis. Não há
+armazenamento fake ativo por padrão. O adaptador de testes não cumpre esses módulos.
+
+**Validação restante:** revisão visual com Mariana e validação manual de Luís;
+a ferramenta de navegador estava indisponível neste ambiente. Fluxos HTML,
+permissões, uploads e operações com o núcleo publicado foram verificados por testes.
+Não restam decisões de P09/P10 para implementar a fronteira HTTP de Luís.
+A execução integrada de produção aguarda as dependências acima. Consulte o
+[contrato de integração](integracao-ocorrencias.md) e os testes de cada módulo.
+
 **Estado em 31/10/2026:** Luís solicitou adaptar somente os pontos conflitantes
 às regras registradas nas branches de Marcelo. **Contas passam de SQLite para
 JSON**, e a documentação incorpora foto obrigatória, campos mínimos e o
@@ -24,14 +52,14 @@ aceites individuais.
 
 | ID | Seleção informada | O que continua aberto |
 | --- | --- | --- |
-| P01 | Campos mínimos do desenho SCRUM-8 e **foto obrigatória nos dois tipos** | Categorias finais, uploads e exposição pública |
+| P01 | Campos do desenho SCRUM-8; foto obrigatória JPEG/PNG até 1,5 MB; projeção pública com setor, definida em 02/11 | Categorias finais e demais políticas futuras |
 | P02 | Indexar **data da perda/achado** na AVL | Datas ausentes/aproximadas, hora, critérios de intervalo e desempate |
 | P03 | Usar pesos e limiar apresentados como **configuração inicial de testes** | Normalização, evidência mínima, calibragem e aprovação para produção |
 | P04 | **Exclusão física**, limpando o vínculo no parceiro e preservando seus dados/status | Remoção de imagens, índice, persistência e eventual trilha |
 | P05 | **Vínculo 1:1 entre tipos opostos abertos**, confirmado por secretário no serviço protegido | Desvinculação/substituição e integração indivisível |
-| P06 | Núcleo cancela somente **ABERTO sem vínculo**; justificativa obrigatória continua proposta | Justificativa e política de cancelamento de pares |
+| P06 | **ABERTO sem vínculo, sem justificativa por enquanto**, confirmado por Luís em 02/11 | Política futura de justificativa e cancelamento de pares |
 | P09 | **JSON alinhado em 31/10**; definido por Luís em 30/10: nome, e-mail `@pucpr.edu.br` único; cadastro, edição, desativação, reativação e reset; sessão de 30 minutos; recuperação local do administrador | Revisão coletiva e validação de uso |
-| P10 | **Contas definidas por Luís em 30/10:** formulários Flask/Jinja, POST com redirecionamento, sessão Flask e proteções básicas | Acabamento visual com Mariana; contratos de ocorrências; revisão coletiva |
+| P10 | Contas e fronteira HTTP de ocorrências implementadas; formulários Jinja, sessão, CSRF, permissões e uploads | Integração com serviços reais, revisão visual com Mariana e validação manual |
 
 Os itens P07, P08, P11 e P12, além dos fluxos de ocorrências em P10, permanecem pendências técnicas e de
 integração. O Figma é referência de comportamento da interface, **não**
@@ -40,6 +68,11 @@ evidência de que o código funciona nem aprovação automática de regras.
 ## Propostas já apresentadas à equipe
 
 ### P01 — Campos, categorias e exposição
+
+**Definido em 02/11 para o HTTP:** JPEG/PNG até 1,5 MB. Visão pública: nome do
+objeto, tipo, status, categoria, data, local, descrição, cor, foto e setor de
+guarda. Referência de arquivo, recebimento, destinação e vínculo interno não
+são projetados ao público. Campos extras e controlados são rejeitados.
 
 **Alinhado com SCRUM-8 em 31/10:** nome, categoria, data da ocorrência, local
 e foto são obrigatórios; descrição e cor são opcionais. Foto é obrigatória
@@ -61,8 +94,8 @@ Categorias propostas anteriormente (continuam abertas):
 separam PERDIDO/ENCONTRADO, identificam campos com `*`, incluem nome,
 categoria, data, descrição e local da perda/achado. O achado também informa
 setor de guarda (inclusive a condição de ainda não entregue). A referência
-antiga de foto opcional foi superada por SCRUM-8. O limite visual de 1,5 MB
-continua referência, sem validação de upload aprovada nesta adequação. O cadastro deve ser
+antiga de foto opcional foi superada por SCRUM-8. Em 02/11, Luís confirmou
+JPEG/PNG e limite de 1,5 MB, agora validados nos uploads. O cadastro deve ser
 curto, claro e funcionar sem conta pública.
 
 **Ainda a decidir:** lista final de categorias, categoria única/múltipla,
@@ -156,26 +189,15 @@ Revisão: Marcelo, Luís, Matheus e André.
 
 ### P06 — Cancelamento
 
-**Alinhado com o núcleo SCRUM-8:** cancelar somente ABERTO isolado. Cancelamento
-de ocorrência vinculada é bloqueado enquanto a propagação não estiver definida.
-Isso não resolve ainda a proposta de justificativa abaixo.
+**Definido expressamente por Luís em 02/11/2026:** seguir o núcleo atual,
+cancelando somente ABERTO sem vínculo, **sem justificativa por enquanto**.
+A proposta anterior de justificativa obrigatória deixa de bloquear esta entrega.
+Secretário é exigido tanto na rota como no serviço. Cancelamento de par segue
+bloqueado pelo núcleo, sem propagação presumida.
 
-**Seleção do solicitante:** exigir **justificativa obrigatória** quando
-secretário mudar a situação para CANCELADO; decisão ainda não ratificada
-pela equipe.
-
-**Aprovado anteriormente:** existem ABERTO, RESOLVIDO e CANCELADO;
-secretários gerenciam situação, com reabertura possível nos termos
-já definidos para ocorrências vinculadas.
-
-**Ainda a decidir:** motivos pré-definidos ou texto livre, tamanho e
-validação da justificativa, quem poderá visualizá-la, registro no JSON,
-qual transição pode cancelar ou reabrir, propagação de cancelamento ao
-par e diferença entre cancelamento e exclusão física. O Figma fornece
-um fluxo de cancelamento, mas não resolve todas essas regras.
-
-**Bloqueia:** mutações finais e testes de cancelamento/reabertura.
-**Revisão:** equipe; Marcelo, Luís e Mariana.
+**Futuro:** se a equipe adotar justificativa ou cancelamento de pares, definir
+campo, persistência, apresentação e propagação antes de alterar o contrato.
+Não há nova aprovação coletiva registrada nesta definição do solicitante.
 
 ## Pendências técnicas e de integração identificadas nesta preparação
 
@@ -264,19 +286,21 @@ para implementar a versão atual. Revisão da equipe não impede o teste local.
 cadastro, edição, ativação/desativação e reset. Não são reprodução final do
 Figma. Mariana continua responsável pela integração visual.
 
-**Permanece aberto para ocorrências:** campos públicos/privados, filtros,
-paginação, contextos Jinja, mensagens e confirmações; integração das regras de
-status/vínculo após as decisões de P01–P08 e os serviços dos responsáveis.
+**Atualização de 02/11:** a fronteira HTTP de Luís está implementada com
+cadastro, listagem/detalhe, foto, filtros combinados e período, edição, exclusão,
+vínculo, resolução/reabertura e cancelamento conforme P06. Os contextos e campos
+constam em [integração](integracao-ocorrencias.md). São telas mínimas, com
+acabamento a revisar com Mariana; não se afirma reprodução final do Figma.
 
-Os comportamentos de referência do Figma continuam para detalhar com os
-responsáveis: escolha PERDIDO/ENCONTRADO, navegação, busca/filtros combinados,
-estados vazios, validação e confirmação de cadastro, explicação de status,
-área da secretaria, conferência presencial, cancelamento, exclusão e reabertura.
-Eles não demonstram implementação nem aprovação automática de regras.
+A fábrica exige dependências concretas via compositor antes de registrar
+essas rotas. A carga de produção e a persistência indivisível de ocorrências
+continuam com os responsáveis. A consulta por período é delegada ao serviço
+injetado para preservar o uso da AVL, sem fallback por varredura no HTTP.
 
-**O que falta:** revisão dos formulários com Mariana e dos fluxos de ocorrência
-com a equipe; André participa da integração. P10 não bloqueia mais o teste do
-módulo de contas. [Contratos](contratos.md) descrevem os caminhos e campos atuais.
+**O que falta:** integrar os componentes de produção e revisar as telas com
+Mariana. A ferramenta de navegador estava indisponível; a validação funcional
+foi realizada por cliente Flask e em ensaio com o núcleo publicado. Nenhuma
+mensagem externa foi enviada nem se registrou aprovação de outra pessoa.
 
 ### P11 — Rubrica e detalhes das estruturas manuais
 
@@ -303,8 +327,9 @@ fixação, mas mudanças incompatíveis devem atualizar consumidores juntos.
 ## Prioridade para liberar a integração
 
 **Antes de converter seleções em requisitos:** registrar a validação coletiva
-dos pontos ainda abertos em P02, P06 e P09 e a configuração experimental de P03.
-P04/P05 seguem agora os comportamentos registrados no desenho SCRUM-8.
+dos pontos futuros de P02/P09 e a configuração experimental de P03.
+P04/P05 seguem os comportamentos do desenho SCRUM-8. P06 segue a definição
+de Luís em 02/11 para cancelar isolados sem justificativa por enquanto.
 P01 continua em revisão aberta. Os desenvolvedores podem trabalhar com
 mocks/testes parametrizados, mas não devem integrar comportamento definitivo
 com base apenas nas seleções deste documento.

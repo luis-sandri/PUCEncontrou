@@ -31,6 +31,27 @@ não representam entrevistas ou nova reunião da equipe.
 - Vínculo e confirmação presencial pertencem à ação do secretário, validada
   por SCRUM-16. O núcleo de domínio não concede permissões a nenhum perfil.
 
+## Definições de Luís para a integração HTTP — 02/11/2026
+
+Nesta conversa, Luís confirmou as seguintes escolhas para concluir seu módulo:
+
+- Fotos JPEG ou PNG, com limite de **1.500.000 bytes (1,5 MB)**. O backend valida
+  os bytes da imagem; nome/extensão enviados pelo navegador não definem seu tipo.
+- Consulta pública mostra nome do objeto, tipo, status, categoria, data da
+  perda/achado, local, descrição, cor, foto e também **setor de guarda**.
+  Contatos, referências internas de arquivo, recebimento, destinação e vínculo
+  interno não são incluídos nessa projeção pública.
+- Cancelamento segue o núcleo atual: somente **ABERTO sem vínculo**, **sem
+  justificativa por enquanto**. Essa escolha substitui a proposta anterior de
+  obrigatoriedade de justificativa nesta etapa. Cancelamento de par continua bloqueado.
+- Resolver exige secretário autenticado e confirmação explícita da devolução
+  presencial; vínculo não resolve automaticamente. Resolver/reabrir delega ao
+  núcleo o lote com ambos os parceiros.
+
+As três primeiras escolhas foram respondidas expressamente por Luís em
+02/11; não se atribui aprovação aos demais integrantes. O descarte físico de
+fotos antigas e as políticas futuras de justificativa/pares continuam separados.
+
 ## Acesso e responsabilidades aprovadas
 
 - Usuários comuns cadastram e consultam ocorrências sem login.

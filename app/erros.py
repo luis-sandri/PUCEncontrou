@@ -1,4 +1,4 @@
-"""Vocabulário técnico preliminar de erros, sem tratamento HTTP implementado."""
+"""Erros esperados do domínio e serviços, traduzidos para HTTP pelas rotas."""
 
 
 class ErroAplicacao(Exception):
@@ -31,3 +31,7 @@ class ContaNaoEncontrada(ErroAplicacao):
 
 class IdentificadorEmUso(ErroValidacao):
     """Identificador normalizado já pertence a outra conta."""
+
+
+class ConflitoAlteracao(ErroAplicacao):
+    """Lote preparado sobre um estado que já foi alterado."""
