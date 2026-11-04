@@ -117,6 +117,11 @@ exige `True`. Vínculo não confirma devolução nem altera status automaticamen
 | `/ocorrencias/<id>/status` | POST | Secretário + `novo_status`; resolver exige `confirmacao_presencial=sim` |
 | `/ocorrencias/vinculos` | POST | Secretário + `perdido_id`, `encontrado_id` |
 
+Quando o módulo está habilitado, `GET /openapi.json` e `GET /swagger` passam a
+incluir automaticamente essas rotas, seus parâmetros de filtro e esquemas de
+formulário/multipart, refletindo também `SETOR_GUARDA_PUBLICO`,
+`CANCELAMENTO_HABILITADO` e `FOTOS_LIMITE_BYTES`.
+
 Nomes de filtro: `q`, `tipo`, `status`, `categoria`, `local_ocorrencia`,
 `situacao_guarda`, `setor_guarda`, `inicio`, `fim`. Tipo/status/guarda são
 vocabulários fechados; os outros filtros são exatos, combinados por E. `q`

@@ -10,4 +10,5 @@
 <p>A equipe está preparando o sistema. O cadastro e a consulta de ocorrências estarão disponíveis em uma próxima etapa.</p>
 {% endif %}
 {% if config.CONTAS_HABILITADAS %}<p class="mt-3"><a href="{{ url_for('autenticacao.login') }}">Acesso da secretaria e administração</a></p>{% endif %}
+<p class="mt-3"><a href="{{ url_for('documentacao.swagger') }}">Documentação HTTP (Swagger)</a></p>
 {% endblock %}

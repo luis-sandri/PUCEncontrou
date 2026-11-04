@@ -39,6 +39,8 @@ fixtures e senhas de teste sem uso real. Nunca carregar `instance/` local.
 - `unit/test_composicao.py`: dependências concretas, isolamento e falha segura.
 - `integration/test_ocorrencias_http.py`: cadastro/consulta públicos e fluxos
   protegidos com contas JSON e fotos reais em `tmp_path`.
+- `integration/test_documentacao.py`: `/swagger` e `/openapi.json` acompanhando
+  apenas as rotas e opções ativas da instância, sem abrir persistência ou contornar CSRF.
 - `fakes_ocorrencias.py`: portas exclusivamente de teste; não são Lista/AVL/JSON
   de produção nem entram na configuração padrão da aplicação.
 

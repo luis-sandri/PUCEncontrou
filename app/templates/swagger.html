@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Swagger — PUC Encontrou</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+  <p><a href="{{ url_for('publicas.inicio') }}">PUC Encontrou</a> ·
+    <a href="{{ url_for('documentacao.especificacao') }}">Baixar OpenAPI JSON</a>
+    {% if config.CONTAS_HABILITADAS %} · <a href="{{ url_for('autenticacao.login') }}">Entrar</a>{% endif %}
+    {% if config.OCORRENCIAS_HABILITADAS %} · <a href="{{ url_for('ocorrencias.listar') }}">Ocorrências</a>{% endif %}</p>
+  <p>Formulários HTML com sessão e CSRF. Para operações protegidas, entre na aplicação
+    e copie o csrf_token de um formulário da mesma sessão. A interface Swagger requer internet.</p>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: {{ url_for('documentacao.especificacao')|tojson }},
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      validatorUrl: null,
+      withCredentials: true,
+      supportedSubmitMethods: ['get', 'post']
+    });
+  </script>
+</body>
+</html>

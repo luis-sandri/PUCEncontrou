@@ -147,6 +147,9 @@ normalizado com `strip`/`casefold`; senha tem 12–128 caracteres Unicode válid
 sem normalização. Os limites são técnicos para revisão da equipe.
 
 O [contrato HTTP](contratos.md) descreve caminhos, campos e códigos de resposta.
+A instância também expõe `http://127.0.0.1:5000/swagger` e `http://127.0.0.1:5000/openapi.json`
+com as rotas habilitadas no momento; para enviar `POST` pelo Swagger UI, autentique-se
+na aplicação na mesma origem e copie o `csrf_token` de um formulário da sessão atual.
 
 ## Validar automaticamente
 

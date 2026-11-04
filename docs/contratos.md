@@ -331,7 +331,13 @@ configurada por `CONTAS_DURACAO_SESSAO_SEGUNDOS`, inteiro positivo, padrão 1800
 
 ## HTTP e Jinja2 — Luís e Mariana
 
-Por padrão, `GET /` (`publicas.inicio`) e arquivos estáticos continuam disponíveis.
+Por padrão, `GET /` (`publicas.inicio`), a documentação interativa `GET /swagger`
+(`documentacao.swagger`), a especificação `GET /openapi.json`
+(`documentacao.especificacao`) e arquivos estáticos estão disponíveis.
+`/openapi.json` gera OpenAPI 3.0.3 somente para as rotas registradas na instância
+ativa (sem expor módulos desabilitados nem tocar na persistência), descrevendo
+respostas HTML/redirecionamentos, cookie de sessão (`sessaoFlask`) e a exigência
+de `csrf_token` nos formulários `POST`.
 As telas mínimas abaixo são habilitadas junto ao módulo de contas. Sucesso em
 POST usa redirecionamento 303 e mensagem; erro preserva somente campos seguros.
 Não há API JSON para contas. Mariana mantém a responsabilidade pelo acabamento

@@ -4,7 +4,7 @@ Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
 **Etapa atual:** base Flask executável, contas e fronteira HTTP de ocorrências de Luís.
-Por padrão, somente `GET /` e arquivos estáticos estão disponíveis.
+Por padrão, somente `GET /`, a documentação HTTP ativa (`/swagger` e `/openapi.json`) e arquivos estáticos estão disponíveis.
 Esta branch acrescenta o **módulo de contas de Luís**: contas em JSON,
 autenticação simples, formulários Jinja, gestão de secretários e CLI local,
 ativados explicitamente para avaliação das escolhas de P09/P10 definidas por Luís. Consulte o
@@ -43,7 +43,7 @@ variáveis de ambiente. A fábrica recusa iniciar sem `SECRET_KEY` e não cria
 JSON de contas/ocorrências, administrador ou diretórios de persistência nesta etapa.
 
 O depurador é para uso local. O frontend inicial usa Bootstrap 5.3.8 via
-CDN com integridade; o carregamento desses estilos requer internet.
+CDN com integridade, e `/swagger` carrega a interface Swagger UI via CDN sobre `/openapi.json`; o carregamento desses ativos requer internet.
 JSON faz parte da biblioteca padrão; Jinja2 e Werkzeug vêm com Flask.
 Pillow valida as imagens JPEG/PNG; não implementa estruturas acadêmicas.
 Não há Node, ferramenta de build ou biblioteca de IA como dependência.

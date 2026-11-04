@@ -43,7 +43,9 @@ def test_configuracao_le_ambiente_em_cada_instancia(monkeypatch, tmp_path):
 
 def test_endpoints_de_negocio_ainda_nao_expostos(app):
     endpoints = {rule.endpoint for rule in app.url_map.iter_rules()}
-    assert endpoints == {"static", "publicas.inicio"}
+    assert endpoints == {
+        "static", "publicas.inicio", "documentacao.swagger", "documentacao.especificacao",
+    }
 
 
 def test_contas_desabilitadas_por_padrao(monkeypatch, tmp_path):
