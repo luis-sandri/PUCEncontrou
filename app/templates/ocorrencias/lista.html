@@ -1,0 +1,24 @@
+{% extends "ocorrencias/layout.html" %}
+{% block title %}Ocorrências · PUC Encontrou{% endblock %}
+{% block conteudo_ocorrencias %}
+<h1>Consultar ocorrências</h1>
+<form method="get" action="{{ url_for('ocorrencias.listar') }}" class="row g-3 mb-4">
+  <div class="col-md-6"><label for="q" class="form-label">Objeto ou código</label><input id="q" name="q" value="{{ filtros.get('q', '') }}" class="form-control"></div>
+  <div class="col-md-3"><label for="tipo" class="form-label">Tipo</label><select id="tipo" name="tipo" class="form-select"><option value="">Todos</option>{% for tipo in ['PERDIDO','ENCONTRADO'] %}<option value="{{ tipo }}" {% if filtros.get('tipo') == tipo %}selected{% endif %}>{{ tipo|capitalize }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><label for="status" class="form-label">Situação</label><select id="status" name="status" class="form-select"><option value="">Todas</option>{% for status in ['ABERTO','RESOLVIDO','CANCELADO'] %}<option value="{{ status }}" {% if filtros.get('status') == status %}selected{% endif %}>{{ status|capitalize }}</option>{% endfor %}</select></div>
+  <div class="col-md-4"><label for="categoria" class="form-label">Categoria</label><input id="categoria" name="categoria" value="{{ filtros.get('categoria', '') }}" class="form-control"></div>
+  <div class="col-md-4"><label for="local_ocorrencia" class="form-label">Local da perda ou achado</label><input id="local_ocorrencia" name="local_ocorrencia" value="{{ filtros.get('local_ocorrencia', '') }}" class="form-control"></div>
+  {% if setor_publico %}<div class="col-md-4"><label for="setor_guarda" class="form-label">Setor de guarda</label><input id="setor_guarda" name="setor_guarda" value="{{ filtros.get('setor_guarda', '') }}" class="form-control"></div>{% endif %}
+  <div class="col-md-3"><label for="inicio" class="form-label">Data inicial</label><input type="date" id="inicio" name="inicio" value="{{ filtros.get('inicio', '') }}" class="form-control"></div>
+  <div class="col-md-3"><label for="fim" class="form-label">Data final</label><input type="date" id="fim" name="fim" value="{{ filtros.get('fim', '') }}" class="form-control"></div>
+  <div class="col-12"><button class="btn btn-primary">Buscar</button> <a href="{{ url_for('ocorrencias.listar') }}">Limpar filtros</a></div>
+</form>
+{% if itens %}<div class="row g-3">{% for item in itens %}
+  <article class="col-md-6 col-lg-4"><div class="card h-100">
+    <img src="{{ url_for('ocorrencias.foto', ocorrencia_id=item.id) }}" alt="Foto de {{ item.nome }}" class="card-img-top" style="height:180px;object-fit:contain" loading="lazy">
+    <div class="card-body"><h2 class="h5"><a href="{{ url_for('ocorrencias.detalhar', ocorrencia_id=item.id) }}">{{ item.nome }}</a></h2>
+      <p>{{ item.tipo|capitalize }} · {{ item.status|capitalize }}</p><p>{{ item.categoria }} · {{ item.data_ocorrencia }}</p><p>{{ item.local_ocorrencia }}</p>
+    </div>
+  </div></article>
+{% endfor %}</div>{% else %}<p role="status">Nenhuma ocorrência encontrada.</p>{% endif %}
+{% endblock %}

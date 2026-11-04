@@ -1,0 +1,50 @@
+{% extends "ocorrencias/layout.html" %}
+{% block title %}{{ item.nome }} · PUC Encontrou{% endblock %}
+{% block conteudo_ocorrencias %}
+<h1>{{ item.nome }}</h1>
+<p>{{ item.tipo|capitalize }} · {{ item.status|capitalize }}</p>
+<p>Código: {{ item.id }}</p>
+<img src="{{ url_for('ocorrencias.foto', ocorrencia_id=item.id) }}" alt="Foto de {{ item.nome }}" class="img-fluid mb-3" style="max-height:360px">
+<dl>
+  <dt>Categoria</dt><dd>{{ item.categoria }}</dd><dt>Data da perda ou achado</dt><dd>{{ item.data_ocorrencia }}</dd>
+  <dt>Local da perda ou achado</dt><dd>{{ item.local_ocorrencia }}</dd>
+  {% if item.descricao %}<dt>Descrição</dt><dd>{{ item.descricao }}</dd>{% endif %}
+  {% if item.cor %}<dt>Cor</dt><dd>{{ item.cor }}</dd>{% endif %}
+  {% if item.get('situacao_guarda') %}<dt>Guarda</dt><dd>{{ item.get('setor_guarda') or 'Ainda não entregue a um setor' }}</dd>{% endif %}
+</dl>
+<p>{{ 'A ocorrência está em acompanhamento.' if item.status == 'ABERTO' else ('A devolução foi confirmada pela secretaria.' if item.status == 'RESOLVIDO' else 'A ocorrência foi cancelada.') }}</p>
+{% if secretario %}
+<section class="border-top pt-4 mt-4"><h2 class="h4">Ações da secretaria</h2>
+  <a href="{{ url_for('ocorrencias.editar', ocorrencia_id=item.id) }}" class="btn btn-outline-primary mb-3">Editar dados</a>
+  {% if item.get('vinculo_id') %}<p>Ocorrência vinculada: <a href="{{ url_for('ocorrencias.detalhar', ocorrencia_id=item.vinculo_id) }}">{{ item.vinculo_id }}</a></p>{% endif %}
+  {% if item.status == 'ABERTO' %}
+    <form method="post" action="{{ url_for('ocorrencias.alterar_status', ocorrencia_id=item.id) }}" class="mb-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="novo_status" value="RESOLVIDO">
+      <label class="form-check"><input type="checkbox" name="confirmacao_presencial" value="sim" class="form-check-input" required> Confirmei presencialmente a devolução do objeto.</label>
+      <button class="btn btn-primary mt-2">Confirmar devolução{{ ' do par' if item.get('vinculo_id') else '' }}</button>
+    </form>
+    {% if cancelamento_habilitado and not item.get('vinculo_id') %}
+    <form method="post" action="{{ url_for('ocorrencias.alterar_status', ocorrencia_id=item.id) }}" class="mb-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="novo_status" value="CANCELADO"><button class="btn btn-outline-secondary">Cancelar ocorrência</button>
+    </form>{% endif %}
+    {% if opcoes_vinculo %}
+    <form method="post" action="{{ url_for('ocorrencias.vincular') }}" class="mb-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="{{ 'perdido_id' if item.tipo == 'PERDIDO' else 'encontrado_id' }}" value="{{ item.id }}">
+      <label for="parceiro" class="form-label">Selecionar ocorrência do tipo oposto para vincular</label>
+      <select id="parceiro" name="{{ 'encontrado_id' if item.tipo == 'PERDIDO' else 'perdido_id' }}" class="form-select mb-2" required><option value="">Selecione</option>{% for opcao in opcoes_vinculo %}<option value="{{ opcao.id }}">{{ opcao.nome }} · {{ opcao.id }}</option>{% endfor %}</select>
+      <button class="btn btn-outline-primary">Criar vínculo</button>
+    </form>{% endif %}
+  {% else %}
+    <form method="post" action="{{ url_for('ocorrencias.alterar_status', ocorrencia_id=item.id) }}" class="mb-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="novo_status" value="ABERTO"><button class="btn btn-outline-primary">Reabrir{{ ' par' if item.get('vinculo_id') else ' ocorrência' }}</button>
+    </form>
+  {% endif %}
+  <form method="post" action="{{ url_for('ocorrencias.excluir', ocorrencia_id=item.id) }}" class="border-top pt-3 mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="form-check"><input type="checkbox" name="confirmacao" value="sim" class="form-check-input" required> Confirmo a exclusão definitiva desta ocorrência.</label>
+    <button class="btn btn-outline-danger mt-2">Excluir ocorrência</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "ocorrencias/layout.html" %}
+{% block title %}{{ 'Editar' if item else 'Cadastrar' }} ocorrência · PUC Encontrou{% endblock %}
+{% block conteudo_ocorrencias %}
+<h1>{{ 'Editar' if item else 'Cadastrar' }} ocorrência</h1>
+<p>{{ 'Objeto encontrado' if tipo == 'ENCONTRADO' else 'Objeto perdido' }}</p>
+<form method="post" enctype="multipart/form-data" action="{{ url_for('ocorrencias.editar', ocorrencia_id=item.id) if item else url_for('ocorrencias.cadastrar') }}" class="col-lg-8">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if not item %}<input type="hidden" name="tipo" value="{{ tipo }}">{% endif %}
+  <label for="nome" class="form-label">Nome do objeto</label><input id="nome" name="nome" value="{{ valores.get('nome', '') }}" class="form-control mb-3" required>
+  <label for="categoria" class="form-label">Categoria</label><input id="categoria" name="categoria" value="{{ valores.get('categoria', '') }}" class="form-control mb-3" required>
+  <label for="data_ocorrencia" class="form-label">Data da perda ou achado</label><input type="date" id="data_ocorrencia" name="data_ocorrencia" value="{{ valores.get('data_ocorrencia', '') }}" class="form-control mb-3" required>
+  <label for="local_ocorrencia" class="form-label">Local da perda ou achado</label><input id="local_ocorrencia" name="local_ocorrencia" value="{{ valores.get('local_ocorrencia', '') }}" class="form-control mb-3" required>
+  <label for="descricao" class="form-label">Descrição (opcional)</label><textarea id="descricao" name="descricao" class="form-control mb-3">{{ valores.get('descricao') or '' }}</textarea>
+  <label for="cor" class="form-label">Cor (opcional)</label><input id="cor" name="cor" value="{{ valores.get('cor') or '' }}" class="form-control mb-3">
+  {% if tipo == 'ENCONTRADO' %}
+    <fieldset><legend class="h5">Guarda do objeto</legend>
+      <label for="situacao_guarda" class="form-label">Situação de guarda</label><select id="situacao_guarda" name="situacao_guarda" class="form-select mb-3">
+        <option value="AINDA_NAO_ENTREGUE" {% if valores.get('situacao_guarda') == 'AINDA_NAO_ENTREGUE' %}selected{% endif %}>Ainda não entregue a um setor</option>
+        <option value="EM_SETOR" {% if valores.get('situacao_guarda') == 'EM_SETOR' %}selected{% endif %}>Em um setor</option>
+      </select>
+      <label for="setor_guarda" class="form-label">Setor de guarda (quando entregue)</label><input id="setor_guarda" name="setor_guarda" value="{{ valores.get('setor_guarda') or '' }}" class="form-control mb-3">
+      {% if item %}
+        <label for="data_recebimento" class="form-label">Data de recebimento pelo setor (opcional)</label><input type="date" id="data_recebimento" name="data_recebimento" value="{{ valores.get('data_recebimento') or '' }}" class="form-control mb-3">
+        <label for="destinacao_a_verificar" class="form-label">Destinação a verificar</label><select id="destinacao_a_verificar" name="destinacao_a_verificar" class="form-select mb-3"><option value="false">Não</option><option value="true" {% if valores.get('destinacao_a_verificar') %}selected{% endif %}>Sim</option></select>
+      {% endif %}
+    </fieldset>
+  {% endif %}
+  <label for="foto" class="form-label">Foto {{ '(nova foto opcional)' if item else '(obrigatória)' }}</label>
+  <input type="file" id="foto" name="foto" accept="image/jpeg,image/png" class="form-control" {% if not item %}required{% endif %} aria-describedby="limite-foto">
+  <p id="limite-foto">Formatos: {{ formatos_foto|join(', ') }}. Até {{ (limite_foto / 1000000)|round(2) }} MB.</p>
+  <button type="submit" class="btn btn-primary">{{ 'Salvar alterações' if item else 'Cadastrar ocorrência' }}</button>
+  <a href="{{ url_for('ocorrencias.listar') }}" class="ms-3">Voltar</a>
+</form>
+{% endblock %}

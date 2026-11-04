@@ -1,16 +1,32 @@
-# Scripts administrativos futuros
+# Comandos administrativos locais
 
-Responsável: Luís; integração de dados: Matheus.
+Responsável: Luís. Integração dos dados de ocorrências: Matheus.
 
-Nenhum script de criação de contas é fornecido nesta etapa. A conta inicial
-de ADMINISTRADOR deverá ser criada por uma CLI local segura, antes do uso
-administrativo, sem endpoint público de cadastro de administradores.
+A CLI fica em `app/cli.py` e é habilitada com `PUC_CONTAS_HABILITADAS=true`.
+Prepare `.env` e dependências conforme o
+[guia de validação](../docs/desenvolvimento-luis.md).
 
-Contrato de segurança para a implementação futura: solicitar senha com
-entrada oculta (`getpass`), confirmar a entrada, aplicar hash de senha,
-usar transação SQLite e impedir criação repetida silenciosa. Não passar
-senhas em argumentos de terminal, gravá-las em fixtures ou definir conta
-padrão. A política para recuperar o acesso inicial deve ser revisada pela equipe.
+```sh
+python -m flask --app app contas inicializar
+python -m flask --app app contas preparar-arquivo
+python -m flask --app app contas importar-sqlite instance/contas.sqlite3
+python -m flask --app app contas recuperar-administrador
+```
 
-Scripts futuros devem receber caminhos externos, respeitar a configuração
-do projeto e nunca sobrescrever dados existentes sem tratamento explícito.
+- `inicializar`: prepara o JSON e cria somente o primeiro administrador,
+  pedindo nome, e-mail `@pucpr.edu.br`, senha oculta e confirmação. Repetir
+  recusa criar outro administrador ou substituir o existente.
+- `preparar-arquivo`: cria um JSON vazio ou valida o existente, sem apagar
+  contas e sem criar administrador.
+- `importar-sqlite ORIGEM`: converte explicitamente contas do protótipo SQLite
+  v1/v2 para um JSON novo. Preserva IDs/hashes, não modifica a origem e recusa
+  destino existente. Executar antes do bootstrap quando houver legado a importar.
+- `recuperar-administrador`: após confirmação explícita do operador local,
+  redefine e-mail/senha da conta inicial existente e invalida seus acessos,
+  mantendo ID e nome. Não cria outra conta. Serve também para adaptar um login
+  genérico antigo para o e-mail institucional.
+
+O destino vem de `PUC_CONTAS_JSON`. Usar um processo por arquivo e executar
+CLI com servidor parado. Fábrica e consultas não criam ou migram persistência. Não há endpoint de criação/recuperação de administradores,
+senha padrão ou senha em argumento de terminal. Os comandos de senha usam
+entrada oculta e confirmação; nenhum segredo deve entrar no Git.

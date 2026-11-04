@@ -3,10 +3,16 @@
 Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
-**Etapa atual:** aplicação Flask mínima executável, contratos preliminares
-e documentação de integração. Somente `GET /` e arquivos estáticos estão
-disponíveis. CRUD, estruturas acadêmicas, persistência, correspondência e
-autenticação serão implementados pelos responsáveis em etapas posteriores.
+**Etapa atual:** base Flask executável, contas e fronteira HTTP de ocorrências de Luís.
+Por padrão, somente `GET /`, a documentação HTTP ativa (`/swagger` e `/openapi.json`) e arquivos estáticos estão disponíveis.
+Esta branch acrescenta o **módulo de contas de Luís**: contas em JSON,
+autenticação simples, formulários Jinja, gestão de secretários e CLI local,
+ativados explicitamente para avaliação das escolhas de P09/P10 definidas por Luís. Consulte o
+[guia de validação](docs/desenvolvimento-luis.md). Ocorrências, estruturas
+acadêmicas, JSON de ocorrências, consultas e correspondência continuam com seus responsáveis.
+As rotas, autorização, uploads e telas mínimas de ocorrências de Luís estão
+implementados; sua ativação depende da carga/armazenamento concretos dos colegas.
+Veja o [contrato de integração](docs/integracao-ocorrencias.md).
 
 ## Executar no Windows
 
@@ -34,11 +40,12 @@ criar o ambiente. Um `.venv` já preparado dispensa a criação novamente.
 Abra `http://127.0.0.1:5000/`. O Flask CLI carrega `.env` com python-dotenv;
 uma chamada Python direta a `create_app` recebe configuração explícita ou
 variáveis de ambiente. A fábrica recusa iniciar sem `SECRET_KEY` e não cria
-JSON, SQLite, administrador ou diretórios de persistência nesta etapa.
+JSON de contas/ocorrências, administrador ou diretórios de persistência nesta etapa.
 
 O depurador é para uso local. O frontend inicial usa Bootstrap 5.3.8 via
-CDN com integridade; o carregamento desses estilos requer internet.
-SQLite faz parte da biblioteca padrão; Jinja2 e Werkzeug vêm com Flask.
+CDN com integridade, e `/swagger` carrega a interface Swagger UI via CDN sobre `/openapi.json`; o carregamento desses ativos requer internet.
+JSON faz parte da biblioteca padrão; Jinja2 e Werkzeug vêm com Flask.
+Pillow valida as imagens JPEG/PNG; não implementa estruturas acadêmicas.
 Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 
 ## Testar
@@ -47,9 +54,9 @@ Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Os testes atuais verificam renderização, inicialização, configuração,
-isolamento entre instâncias e ausência de endpoints de negócio. Os testes
-futuros de módulos ficam em `tests/unit/` e `tests/integration/`.
+Os testes verificam a base, o isolamento e a ausência de endpoints de negócio
+por padrão, além do módulo optativo de contas: JSON temporário, autorização,
+CSRF, sessão Flask, reativação, migração, falhas transacionais e CLI sem senha na saída.
 Consulte [a organização dos testes](tests/README.md).
 
 O VS Code oferece extensões recomendadas, descoberta de pytest e execução
@@ -65,21 +72,26 @@ app/
   models/                Ocorrência (Marcelo), contas (Luís)
   structures/            Lista Dinâmica (Marcelo), AVL (Leandro)
   services/              CRUD/regras, consultas, correspondência, contas
-  repositories/          JSON (Matheus), SQLite (Luís)
+  repositories/          JSON de ocorrências (Matheus) e de contas (Luís)
   routes/                HTTP e autorização (Luís)
   templates/             Jinja2 (Mariana)
   static/                CSS, JavaScript e imagens (Mariana)
 tests/                   unidade por módulo; integração com André
 docs/                    decisões, contratos, pendências e análise
-scripts/                 espaço para inicialização segura futura
+scripts/                 instruções da CLI administrativa
 .vscode/                 configuração compartilhável
-instance/                dados locais futuros, ignorados pelo Git
+instance/                dados locais, ignorados pelo Git
 ```
 
 As classes terminadas em `Porta` são `typing.Protocol`: descrevem
 assinaturas para consumidores e fakes, não executam funcionalidades e não
 devem ser instanciadas. Não representam a implementação acadêmica de Lista
-ou AVL. Não há composição dos serviços de negócio na fábrica ainda.
+ou AVL. A composição de ocorrências exige as dependências concretas do núcleo
+e da consulta; os serviços de contas só são compostos com `PUC_CONTAS_HABILITADAS=true`; nem essa
+composição cria arquivo ou administrador. A CLI explícita prepara o JSON de contas.
+A fronteira de ocorrências só é composta com `PUC_OCORRENCIAS_HABILITADAS=true`,
+contas habilitadas e `PUC_OCORRENCIAS_COMPOSITOR` apontando para dependências
+concretas; não há compositor de produção fictício neste repositório.
 
 ## Começar o trabalho em equipe
 
@@ -95,19 +107,35 @@ ou AVL. Não há composição dos serviços de negócio na fábrica ainda.
    progressivamente. Luís coordena a fábrica; André coordena testes integrados.
 
 O JSON é a persistência das ocorrências; a Lista manual contém os registros
-em memória; a AVL manual é um índice auxiliar de datas e IDs. SQLite guarda
-contas administrativas. Interface e rotas não acessam dados diretamente.
+em memória; a AVL manual é um índice auxiliar de datas e IDs. Contas
+administrativas usam outro JSON, mantido por Luís. Interface e rotas não acessam dados diretamente.
 
-Categorias e campos exatos continuam em revisão. Para a equipe avaliar,
-foram selecionadas as seguintes propostas: data de perda/achado para a AVL;
-pontuação inicial de correspondência **somente para testes**; exclusão
-física; vínculo 1:1 criado por secretário; justificativa obrigatória
-para cancelar; gestão de contas de secretário com cadastro, edição,
-desativação e redefinição de senha. **Nenhuma dessas seleções é ainda
-aprovação coletiva**, e os efeitos e contratos pendentes constam em
-[pendências](docs/pendencias.md). Não há entrevistas ou dados reais incluídos nesta base.
+Em 31/10, a pedido de Luís, os pontos conflitantes foram alinhados às regras
+registradas nas branches de Marcelo: foto obrigatória nos dois tipos; nome,
+categoria, data e local mínimos; vínculo 1:1 de tipos opostos abertos; exclusão
+física que limpa o vínculo e preserva o parceiro; cancelamento somente de ABERTO
+isolado. Categorias finais, exposição pública, uploads, justificativa e política
+de cancelamento de pares continuam em revisão, conforme
+[pendências](docs/pendencias.md). Modelo/núcleo/Lista dos colegas permanecem nas
+suas branches; esta adequação não os incorpora. A fronteira HTTP de Luís foi concluída
+em 02/11 e aguarda esses componentes reais para ativação integrada.
 Contas, hashes, arquivos locais e segredos não devem entrar no Git. Nenhuma
 alteração de Jira, publicação, commit ou push faz parte desta preparação.
+
+Em 30/10/2026, Luís definiu nome, e-mail institucional `@pucpr.edu.br`,
+reativação, sessão de 30 minutos e recuperação local para seu módulo de contas.
+P10 foi simplificado para formulários Flask/Jinja e sessão nativa do Flask;
+a API JSON e a tabela de sessões foram removidas. As decisões estão em
+[pendências](docs/pendencias.md), sem registrar aprovação coletiva inexistente.
+As telas mínimas permitem testar `/login` e a gestão de secretários; Mariana
+continua responsável pelo acabamento visual. Em 02/11, Luís confirmou fotos
+JPEG/PNG até 1,5 MB, setor de guarda público e cancelamento isolado sem
+justificativa por enquanto. Rotas de ocorrências e testes constam no guia de integração.
+
+**Se já usou o SQLite do protótipo anterior**, consulte a
+[importação explícita para JSON e recuperação de acesso](docs/desenvolvimento-luis.md).
+A configuração atual é `PUC_CONTAS_JSON=instance/contas.json`; a antiga
+`PUC_CONTAS_SQLITE` deixa de ser usada. Nenhum dado local é convertido automaticamente.
 
 ## Referências técnicas
 
