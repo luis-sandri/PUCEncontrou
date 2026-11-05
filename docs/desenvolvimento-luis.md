@@ -27,7 +27,7 @@ os fluxos HTML foram verificados por testes, inclusive com núcleo publicado.
   backend. Contador na conta invalida acessos após mudança de credenciais/situação.
 - Formulários com CSRF, validação e mensagens; POST bem-sucedido redireciona.
 - Senhas com hash Werkzeug, JSON validado e dados locais fora do Git.
-- CLI para criar o primeiro administrador, preparar JSON, importar legado e recuperar o acesso local.
+- CLI para criar o primeiro administrador, preparar JSON e recuperar o acesso local.
 
 No modo mínimo e de contas, a fábrica não acessa persistência. Ao habilitar
 ocorrências, chama o compositor externo para carregar seus componentes reais.
@@ -102,22 +102,7 @@ Use **um processo da aplicação por arquivo**. O lock coordena requisições da
 mesma instância; a CLI deve rodar com o servidor parado. Não usar vários workers
 ou executar mudanças da CLI enquanto o servidor grava o mesmo JSON.
 
-## Importar contas do protótipo SQLite
-
-Se já criou contas em SQLite v1 ou v2, **antes de criar o JSON de destino**, com
-o servidor parado, execute:
-
-```sh
-.venv/bin/python -m flask --app app contas importar-sqlite instance/contas.sqlite3
-```
-
-A importação é explícita: abre a origem somente para leitura, preserva contas,
-IDs, hashes, nomes, situação e contador, e grava um JSON novo em `PUC_CONTAS_JSON`.
-Não altera ou apaga o SQLite. Destino existente, fonte incompatível ou registros
-inválidos impedem a importação. A aplicação não converte dados automaticamente.
-
-Logins genéricos antigos são preservados no arquivo, mas o login exige e-mail
-institucional. Para adaptar o administrador, ou recuperar seu acesso:
+Para recuperar o acesso do administrador inicial localmente:
 
 ```sh
 .venv/bin/python -m flask --app app contas recuperar-administrador
@@ -125,7 +110,7 @@ institucional. Para adaptar o administrador, ou recuperar seu acesso:
 
 O comando pede confirmação, e-mail e nova senha oculta/confirmada. Mantém ID e
 nome do administrador e invalida seus acessos anteriores. Não cria outro
-administrador. Secretários antigos podem ter o e-mail corrigido na tela de gestão.
+administrador.
 
 ## Testar no navegador
 
@@ -158,7 +143,7 @@ na aplicação na mesma origem e copie o `csrf_token` de um formulário da sess�
 ```
 
 Os testes usam somente `tmp_path`, contas fictícias e cliente Flask. Verificam
-CLI, importação do legado SQLite para JSON sem alterar a origem, recuperação local, persistência após
+CLI, recuperação local, persistência após
 reabertura, formulários, campos extras, CSRF, autorização, domínio de e-mail,
 expiração, reset/desativação/reativação e rollback de dados + contador em falha.
 

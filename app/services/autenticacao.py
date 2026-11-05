@@ -73,7 +73,3 @@ class ServicoAutenticacao:
         senha_hash = generate_password_hash(validar_senha(senha))
         self.preparar_arquivo()
         return self._repositorio.recuperar_administrador(email, senha_hash=senha_hash)
-
-    def importar_contas_legadas(self, origem: str) -> int:
-        """Somente CLI, com servidor parado: não modifica o banco antigo."""
-        return self._repositorio.importar_legado_sqlite(origem)

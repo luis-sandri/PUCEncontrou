@@ -2,7 +2,6 @@
 
 from dataclasses import FrozenInstanceError
 import json
-import sqlite3
 
 import pytest
 
@@ -157,43 +156,6 @@ def test_registros_invalidos_nao_sao_aceitos(repositorio, alteracao):
     with pytest.raises(ErroPersistencia):
         repositorio.salvar_secretario(dados("tres"), senha_hash="hash-tres")
     assert repositorio.caminho.read_bytes() == antes
-
-
-def criar_legado(caminho, versao):
-    with sqlite3.connect(caminho) as con:
-        coluna = ", versao_sessao INTEGER NOT NULL DEFAULT 0" if versao == 2 else ""
-        con.execute("CREATE TABLE contas (id TEXT PRIMARY KEY, perfil TEXT NOT NULL, nome TEXT NOT NULL, identificador TEXT NOT NULL UNIQUE, ativa INTEGER NOT NULL, senha_hash TEXT NOT NULL" + coluna + ")")
-        con.execute("INSERT INTO contas (id,perfil,nome,identificador,ativa,senha_hash) VALUES ('id-antigo','ADMINISTRADOR','Admin antigo','admin.fixture',1,'hash-antigo')")
-        con.execute(f"PRAGMA user_version = {versao}")
-
-
-@pytest.mark.parametrize("versao", [1, 2])
-def test_importacao_preserva_legado_e_contas(tmp_path, versao):
-    origem = tmp_path / "antigo.sqlite3"
-    criar_legado(origem, versao)
-    antes = origem.read_bytes()
-    repo = RepositorioContasJSON(tmp_path / "destino" / "contas.json")
-    assert repo.importar_legado_sqlite(origem) == 1
-    conta = repo.buscar_por_id("id-antigo")
-    assert conta.nome == "Admin antigo"
-    assert conta.senha_hash == "hash-antigo"
-    assert conta.identificador == "admin.fixture"
-    assert conta.versao_sessao == 0
-    assert origem.read_bytes() == antes
-    destino = repo.caminho.read_bytes()
-    with pytest.raises(ErroValidacao, match="já existe"):
-        repo.importar_legado_sqlite(origem)
-    assert repo.caminho.read_bytes() == destino
-
-
-def test_importacao_de_legado_invalido_nao_cria_destino(tmp_path):
-    origem = tmp_path / "invalido.sqlite3"
-    origem.write_bytes(b"nao e sqlite")
-    repo = RepositorioContasJSON(tmp_path / "destino" / "contas.json")
-    with pytest.raises(ErroPersistencia):
-        repo.importar_legado_sqlite(origem)
-    assert not repo.caminho.parent.exists()
-    assert origem.read_bytes() == b"nao e sqlite"
 
 
 def test_falha_de_leitura_nao_expoe_caminho(tmp_path):

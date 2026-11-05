@@ -98,34 +98,3 @@ def test_preparar_arquivo_nao_cria_administrador(app_cli):
     from app.erros import FalhaAutenticacao
     with pytest.raises(FalhaAutenticacao):
         app_cli.extensions["autenticacao"].autenticar("admin@pucpr.edu.br", SENHA)
-
-
-def test_importacao_cli_preserva_hash_e_permite_login(app_cli, tmp_path):
-    import sqlite3
-    from werkzeug.security import generate_password_hash
-
-    origem = tmp_path / "legado.sqlite3"
-    senha_hash = generate_password_hash(SENHA)
-    with sqlite3.connect(origem) as con:
-        con.execute("""CREATE TABLE contas (
-            id TEXT, perfil TEXT, nome TEXT, identificador TEXT,
-            ativa INTEGER, senha_hash TEXT, versao_sessao INTEGER
-        )""")
-        con.execute(
-            "INSERT INTO contas VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("admin-legado", "ADMINISTRADOR", "Admin fictício", "admin@pucpr.edu.br", 1, senha_hash, 3),
-        )
-        con.execute("PRAGMA user_version = 2")
-    antes = origem.read_bytes()
-    runner = app_cli.test_cli_runner()
-    resultado = runner.invoke(args=["contas", "importar-sqlite", str(origem)])
-    assert resultado.exit_code == 0, resultado.output
-    assert SENHA not in resultado.output
-    assert senha_hash not in resultado.output
-    conta = app_cli.extensions["autenticacao"].autenticar("admin@pucpr.edu.br", SENHA)
-    assert conta.id == "admin-legado"
-    assert conta.versao_sessao == 3
-    assert origem.read_bytes() == antes
-    destino = app_cli.config["CONTAS_JSON"].read_bytes()
-    assert runner.invoke(args=["contas", "importar-sqlite", str(origem)]).exit_code != 0
-    assert app_cli.config["CONTAS_JSON"].read_bytes() == destino

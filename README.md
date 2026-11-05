@@ -56,7 +56,7 @@ Não há Node, ferramenta de build ou biblioteca de IA como dependência.
 
 Os testes verificam a base, o isolamento e a ausência de endpoints de negócio
 por padrão, além do módulo optativo de contas: JSON temporário, autorização,
-CSRF, sessão Flask, reativação, migração, falhas transacionais e CLI sem senha na saída.
+CSRF, sessão Flask, reativação, falhas transacionais e CLI sem senha na saída.
 Consulte [a organização dos testes](tests/README.md).
 
 O VS Code oferece extensões recomendadas, descoberta de pytest e execução
@@ -131,11 +131,6 @@ As telas mínimas permitem testar `/login` e a gestão de secretários; Mariana
 continua responsável pelo acabamento visual. Em 02/11, Luís confirmou fotos
 JPEG/PNG até 1,5 MB, setor de guarda público e cancelamento isolado sem
 justificativa por enquanto. Rotas de ocorrências e testes constam no guia de integração.
-
-**Se já usou o SQLite do protótipo anterior**, consulte a
-[importação explícita para JSON e recuperação de acesso](docs/desenvolvimento-luis.md).
-A configuração atual é `PUC_CONTAS_JSON=instance/contas.json`; a antiga
-`PUC_CONTAS_SQLITE` deixa de ser usada. Nenhum dado local é convertido automaticamente.
 
 ## Referências técnicas
 

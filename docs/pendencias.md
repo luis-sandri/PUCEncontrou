@@ -37,7 +37,7 @@ Esta solicitação não acrescenta aprovação coletiva inexistente.
 
 As definições de Luís de 30/10 para P09/P10 permanecem: e-mail `@pucpr.edu.br`,
 gestão de secretários, sessão de 30 minutos e formulários Jinja. O módulo usa
-agora JSON e pode importar explicitamente o legado SQLite sem alterá-lo.
+agora JSON local.
 Modelo, núcleo e Lista dos colegas **continuam em suas branches**, sem serem
 incorporados por esta adequação. O acabamento com Mariana e a integração de
 ocorrências continuam separados. Veja [regras](regras-negocio.md),
@@ -205,8 +205,8 @@ Não há nova aprovação coletiva registrada nesta definição do solicitante.
 
 **Alinhamento em 31/10:** ocorrências e contas ficam em arquivos JSON locais
 separados. O codec de ocorrências está na branch SCRUM-8; o arquivo de ocorrências
-continua com Matheus. O JSON de contas é mantido por Luís, com envelope v1 e
-importação explícita do legado SQLite; não define o esquema de ocorrências.
+continua com Matheus. O JSON de contas é mantido por Luís, com envelope v1;
+não define o esquema de ocorrências.
 
 Revisar envelope versionado ou formato simples, tipos de ID/data, validação
 do snapshot, arquivo inexistente, migração, backup e recuperação de dados.
@@ -239,8 +239,7 @@ de mutações reais, sem bloquear os algoritmos isolados.
 
 **Definido com Luís em 30/10, com persistência alinhada em 31/10 para JSON.**
 Nome, e-mail institucional, gestão e sessão permanecem iguais. SQLite foi
-retirado do funcionamento normal; a CLI pode importar contas antigas em modo
-somente leitura, sem substituir um JSON existente ou apagar o legado.
+retirado do projeto.
 
 | Tema | Seleção de Luís e comportamento implementado |
 | --- | --- |

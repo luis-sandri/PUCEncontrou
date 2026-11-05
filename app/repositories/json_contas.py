@@ -5,7 +5,7 @@ usada com o servidor parado. O lock coordena as requisições desta instância.
 """
 
 from collections.abc import Mapping
-from contextlib import closing, suppress
+from contextlib import suppress
 from dataclasses import asdict, replace
 import json
 import os
@@ -196,34 +196,3 @@ class RepositorioContasJSON:
                     self._gravar(contas)
                     return nova.para_visao()
             raise ContaNaoEncontrada("Administrador inicial não encontrado.")
-
-    def importar_legado_sqlite(self, origem: Path | str) -> int:
-        """Conversão explícita do protótipo anterior; SQLite é aberto só para leitura."""
-        import sqlite3
-
-        with self._lock:
-            if self.caminho.exists():
-                raise ErroValidacao("O arquivo JSON de contas já existe; importação recusada.")
-            try:
-                uri = Path(origem).resolve().as_uri() + "?mode=ro"
-                with closing(sqlite3.connect(uri, uri=True)) as con:
-                    con.row_factory = sqlite3.Row
-                    versao = con.execute("PRAGMA user_version").fetchone()[0]
-                    if versao not in (1, 2):
-                        raise ErroPersistencia("Versão do legado de contas incompatível.")
-                    registros = []
-                    for linha in con.execute("SELECT * FROM contas"):
-                        if linha["ativa"] not in (0, 1):
-                            raise ErroPersistencia("Registro legado inválido.")
-                        registros.append({
-                            "id": linha["id"], "perfil": linha["perfil"], "nome": linha["nome"],
-                            "identificador": linha["identificador"].strip().casefold(),
-                            "ativa": bool(linha["ativa"]), "senha_hash": linha["senha_hash"],
-                            "versao_sessao": linha["versao_sessao"] if versao == 2 else 0,
-                        })
-                contas = self._validar_registros(registros)
-                self.caminho.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-            except (sqlite3.Error, OSError, KeyError, IndexError, AttributeError):
-                raise ErroPersistencia("Não foi possível importar o legado de contas.") from None
-            self._gravar(contas)
-            return len(contas)

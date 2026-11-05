@@ -264,7 +264,6 @@ salvar_secretario(dados: Mapping[str, object], *, senha_hash: str) -> ContaAdmin
 listar_secretarios() -> list[ContaAdministrativa]
 atualizar_secretario(conta_id: str, dados: Mapping[str, object], *, senha_hash: str | None = None) -> ContaAdministrativa
 recuperar_administrador(identificador: str, *, senha_hash: str) -> ContaAdministrativa
-importar_legado_sqlite(origem: Path | str) -> int
 ```
 
 O concreto devolve `CredenciaisConta`/`ContaAdministrativa` onde a porta descreve
@@ -296,21 +295,13 @@ obter_sessao(conta_id: str, versao_sessao: int) -> ContaAdministrativa | None
 preparar_arquivo() -> None
 inicializar_administrador(dados: Mapping[str, object], senha: str) -> ContaAdministrativa
 recuperar_administrador(identificador: str, senha: str) -> ContaAdministrativa
-importar_contas_legadas(origem: str) -> int
 ```
 
 As portas dos serviços mantêm retornos `ContaAdministrativaPorta`;
 `GestaoContasPorta.listar_secretarios` usa `Sequence[ContaAdministrativaPorta]`.
-Preparação, bootstrap, recuperação e importação são exclusivos da CLI local.
-O antigo `atualizar_banco()` foi substituído por `preparar_arquivo()`;
-configuração agora é `CONTAS_JSON` / `PUC_CONTAS_JSON`, padrão
-`instance/contas.json`. `CONTAS_SQLITE` não é mais usado pelo aplicativo.
-
-Importação abre o SQLite legado v1/v2 somente para leitura, preserva IDs,
-hashes, nomes, identificadores e situação, e grava um JSON novo. Recusa destino
-existente, fonte incompatível ou registros inválidos. Não altera/apaga a origem.
-Para login genérico legado, ajustar e-mail pela recuperação local ou edição de
-secretário. Não há migração automática durante requisições.
+Preparação, bootstrap e recuperação são exclusivos da CLI local.
+A configuração é `CONTAS_JSON` / `PUC_CONTAS_JSON`, padrão
+`instance/contas.json`.
 
 Gestão exige administrador ativo recarregado pelo ID. Só modifica secretários;
 não confia em perfil recebido. Campos permitidos: `nome`, `identificador`,

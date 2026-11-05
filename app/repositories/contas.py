@@ -1,7 +1,6 @@
 """Contrato de persistência de contas, independente da interface Flask."""
 
 from collections.abc import Mapping
-from pathlib import Path
 from typing import Protocol
 
 from app.models.conta import ContaAdministrativa, ContaAdministrativaPorta, CredenciaisContaPorta
@@ -37,5 +36,3 @@ class RepositorioContasPorta(Protocol):
     def recuperar_administrador(
         self, identificador: str, *, senha_hash: str
     ) -> ContaAdministrativa: ...
-
-    def importar_legado_sqlite(self, origem: Path | str) -> int: ...

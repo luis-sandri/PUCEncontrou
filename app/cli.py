@@ -57,16 +57,3 @@ def recuperar_administrador():
         mensagem = "Arquivo de contas indisponível." if isinstance(exc, ErroPersistencia) else str(exc)
         raise click.ClickException(mensagem) from None
     click.echo("Acesso do administrador recuperado; faça login novamente.")
-
-
-@contas_cli.command("importar-sqlite")
-@click.argument("origem", type=click.Path(exists=True, dir_okay=False))
-@with_appcontext
-def importar_sqlite(origem):
-    """Importa contas do protótipo anterior sem modificar a origem ou JSON existente."""
-    try:
-        quantidade = current_app.extensions["autenticacao"].importar_contas_legadas(origem)
-    except ErroAplicacao as exc:
-        mensagem = "Não foi possível importar o legado de contas." if isinstance(exc, ErroPersistencia) else str(exc)
-        raise click.ClickException(mensagem) from None
-    click.echo(f"{quantidade} conta(s) importada(s) para JSON.")
