@@ -1,5 +1,16 @@
 # Pendências e propostas para revisão da equipe
 
+## Integração SCRUM-9 — 06/11/2026
+
+A classe `ListaDinamica[T]` está implementada em `app/structures/lista_dinamica.py`,
+com buffer fixo, expansão por duplicação, cópia e deslocamento manuais, busca
+e filtragem por predicados. Veja [o guia SCRUM-9](scrum-9.md).
+O modelo e o núcleo SCRUM-8, a AVL e os módulos de contas, autorização e fotos
+da main foram preservados. A Lista real é testada com o núcleo e ocorrências;
+a sincronização de produção com JSON/AVL continua em SCRUM-13.
+A representação do buffer deve ser conferida com a rubrica acadêmica (P11).
+As seções datadas anteriores preservam o histórico das entregas.
+
 ## Integração SCRUM-8 com a main
 
 O modelo imutável, codec e núcleo CRUD de Marcelo estão implementados em

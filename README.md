@@ -1,5 +1,16 @@
 # PUC Encontrou
 
+## Integração SCRUM-9 — 06/11/2026
+
+A classe `ListaDinamica[T]` está implementada em `app/structures/lista_dinamica.py`,
+com buffer fixo, expansão por duplicação, cópia e deslocamento manuais, busca
+e filtragem por predicados. Veja [o guia SCRUM-9](docs/scrum-9.md).
+O modelo e o núcleo SCRUM-8, a AVL e os módulos de contas, autorização e fotos
+da main foram preservados. A Lista real é testada com o núcleo e ocorrências;
+a sincronização de produção com JSON/AVL continua em SCRUM-13.
+A representação do buffer deve ser conferida com a rubrica acadêmica (P11).
+As seções datadas anteriores preservam o histórico das entregas.
+
 ## Integração SCRUM-8 com a main
 
 O modelo imutável, codec e núcleo CRUD de Marcelo estão implementados em
@@ -16,7 +27,7 @@ As referências abaixo a núcleo/modelo ainda não implementados são histórica
 Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
-**Etapa atual:** base Flask executável, contas e fronteira HTTP de ocorrências de Luís.
+**Etapa atual:** base Flask, contas, fronteira HTTP, núcleo SCRUM-8, Lista manual SCRUM-9 e AVL implementados; composição de produção ainda pendente.
 Por padrão, somente `GET /`, a documentação HTTP ativa (`/swagger` e `/openapi.json`) e arquivos estáticos estão disponíveis.
 Esta branch acrescenta o **módulo de contas de Luís**: contas em JSON,
 autenticação simples, formulários Jinja, gestão de secretários e CLI local,
