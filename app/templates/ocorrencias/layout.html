@@ -1,0 +1,9 @@
+{% extends "contas/layout.html" %}
+{% block conteudo_contas %}
+  <nav class="d-flex flex-wrap gap-3 mb-4" aria-label="Ocorrências">
+    <a href="{{ url_for('ocorrencias.listar') }}">Consultar ocorrências</a>
+    <a href="{{ url_for('ocorrencias.cadastrar', tipo='PERDIDO') }}">Perdi um objeto</a>
+    <a href="{{ url_for('ocorrencias.cadastrar', tipo='ENCONTRADO') }}">Encontrei um objeto</a>
+  </nav>
+  {% block conteudo_ocorrencias %}{% endblock %}
+{% endblock %}

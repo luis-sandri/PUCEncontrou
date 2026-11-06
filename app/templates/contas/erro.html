@@ -1,0 +1,7 @@
+{% extends "contas/layout.html" %}
+{% block title %}Não foi possível concluir · PUC Encontrou{% endblock %}
+{% block conteudo_contas %}
+  <h1 class="h3">Não foi possível concluir</h1>
+  <p role="alert">{{ mensagem }}</p>
+  <a href="{{ url_for('publicas.inicio') }}">Voltar ao início</a>
+{% endblock %}
