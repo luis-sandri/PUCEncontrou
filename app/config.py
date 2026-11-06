@@ -15,11 +15,22 @@ def carregar_configuracao() -> dict[str, object]:
     """Lê o ambiente a cada fábrica, evitando estado global entre testes."""
     return {
         "SECRET_KEY": os.environ.get("PUC_SECRET_KEY"),
+        "CONTAS_HABILITADAS": os.environ.get(
+            "PUC_CONTAS_HABILITADAS", "false"
+        ).lower() == "true",
+        "CONTAS_DURACAO_SESSAO_SEGUNDOS": 1800,
+        "OCORRENCIAS_HABILITADAS": os.environ.get("PUC_OCORRENCIAS_HABILITADAS", "false").lower() == "true",
+        "OCORRENCIAS_COMPOSITOR": os.environ.get("PUC_OCORRENCIAS_COMPOSITOR"),
+        "FOTOS_DIRETORIO": _caminho_local("PUC_FOTOS_DIRETORIO", "instance/fotos"),
+        "FOTOS_LIMITE_BYTES": 1_500_000,
+        "FOTOS_FORMATOS": ("JPEG", "PNG"),
+        "SETOR_GUARDA_PUBLICO": True,
+        "CANCELAMENTO_HABILITADO": True,
         "OCORRENCIAS_JSON": _caminho_local(
             "PUC_OCORRENCIAS_JSON", "instance/ocorrencias.json"
         ),
-        "CONTAS_SQLITE": _caminho_local(
-            "PUC_CONTAS_SQLITE", "instance/contas.sqlite3"
+        "CONTAS_JSON": _caminho_local(
+            "PUC_CONTAS_JSON", "instance/contas.json"
         ),
         "SESSION_COOKIE_HTTPONLY": True,
         "SESSION_COOKIE_SAMESITE": "Lax",

@@ -1,16 +1,34 @@
 # Regras de negócio
 
+## Integração SCRUM-8 com a main
+
+O modelo imutável, codec e núcleo CRUD de Marcelo estão implementados em
+`app/models/ocorrencia.py`, `app/models/alteracao_ocorrencias.py` e
+`app/services/nucleo_ocorrencias.py`. Consulte [o guia SCRUM-8](scrum-8.md).
+As implementações de contas JSON, autorização, upload e rotas de Luís e a AVL
+de Leandro foram preservadas. O núcleo usa lotes com estados anteriores e
+posteriores; a composição real com Lista/AVL/JSON ainda depende da integração.
+Foto é obrigatória nos dois tipos. A exclusão é física e limpa o vínculo no
+parceiro sem excluí-lo. Cancelamento de par permanece bloqueado conforme o
+desenho aprovado da SCRUM-8. Categorias e campos finais continuam em revisão.
+As referências abaixo a núcleo/modelo ainda não implementados são históricas.
+
 Fonte: contexto fornecido pelo solicitante. Não foram realizadas entrevistas
 nem consultadas tasks do Jira. Esta página registra somente decisões
 informadas como aprovadas. Propostas estão em [pendências](pendencias.md).
 
-## Atualização informada pelo usuário — SCRUM-8
+## Alinhamento com SCRUM-8 — 31/10/2026
+
+Por solicitação de Luís, esta branch passa a seguir os pontos conflitantes
+registrados na [branch de Marcelo](https://github.com/luis-sandri/PUCEncontrou/blob/03fb6fb23b5662587cada2c0b6caf263ef0d7303/docs/regras-negocio.md).
+O registro de 19/10 e a aprovação de desenho em 27/10 abaixo vêm dessa fonte;
+não representam entrevistas ou nova reunião da equipe.
 
 - Decisões vigentes de 19/10/2026: foto obrigatória em PERDIDO e ENCONTRADO,
   inclusive cadastro interno; ocorrências e contas administrativas em JSON
   local; fotos como arquivos locais com referência no JSON.
 - Em 27/10/2026, Marcelo escolheu exclusão física e aprovou o
-  [desenho da SCRUM-8](superpowers/specs/2026-10-27-scrum-8-ocorrencias-design.md).
+  [desenho da SCRUM-8](https://github.com/luis-sandri/PUCEncontrou/blob/03fb6fb23b5662587cada2c0b6caf263ef0d7303/docs/superpowers/specs/2026-10-27-scrum-8-ocorrencias-design.md).
   A exclusão limpa a referência no parceiro, preservando seus demais dados e
   status. O núcleo não remove a imagem do disco.
 - Para esta implementação: vínculo 1:1 entre tipos opostos abertos;
@@ -25,6 +43,27 @@ informadas como aprovadas. Propostas estão em [pendências](pendencias.md).
   Destinação a verificar não autoriza doação nem cria prazo institucional.
 - Vínculo e confirmação presencial pertencem à ação do secretário, validada
   por SCRUM-16. O núcleo de domínio não concede permissões a nenhum perfil.
+
+## Definições de Luís para a integração HTTP — 02/11/2026
+
+Nesta conversa, Luís confirmou as seguintes escolhas para concluir seu módulo:
+
+- Fotos JPEG ou PNG, com limite de **1.500.000 bytes (1,5 MB)**. O backend valida
+  os bytes da imagem; nome/extensão enviados pelo navegador não definem seu tipo.
+- Consulta pública mostra nome do objeto, tipo, status, categoria, data da
+  perda/achado, local, descrição, cor, foto e também **setor de guarda**.
+  Contatos, referências internas de arquivo, recebimento, destinação e vínculo
+  interno não são incluídos nessa projeção pública.
+- Cancelamento segue o núcleo atual: somente **ABERTO sem vínculo**, **sem
+  justificativa por enquanto**. Essa escolha substitui a proposta anterior de
+  obrigatoriedade de justificativa nesta etapa. Cancelamento de par continua bloqueado.
+- Resolver exige secretário autenticado e confirmação explícita da devolução
+  presencial; vínculo não resolve automaticamente. Resolver/reabrir delega ao
+  núcleo o lote com ambos os parceiros.
+
+As três primeiras escolhas foram respondidas expressamente por Luís em
+02/11; não se atribui aprovação aos demais integrantes. O descarte físico de
+fotos antigas e as políticas futuras de justificativa/pares continuam separados.
 
 ## Acesso e responsabilidades aprovadas
 
@@ -82,4 +121,6 @@ continuam pendentes; não foram adicionadas ao núcleo.
 | Criar conta inicial de administrador | Sem endpoint público | Sem endpoint público | Inicialização segura prévia |
 
 O backend deve negar operações não autorizadas. A última linha descreve
-um processo local futuro, não um endpoint ou uma permissão de usuário.
+um processo local pela CLI, não um endpoint ou uma permissão de usuário.
+As definições de Luís para P09/P10 (e-mail, gestão e formulários) permanecem
+registradas em [pendências](pendencias.md), agora com contas em JSON.

@@ -1,0 +1,17 @@
+{% extends "contas/layout.html" %}
+{% block title %}Entrar · PUC Encontrou{% endblock %}
+{% block conteudo_contas %}
+  <h1>Entrar</h1>
+  <p>Acesso de secretários e administrador.</p>
+  <form method="post" action="{{ url_for('autenticacao.login') }}" class="col-md-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="identificador" class="form-label">E-mail institucional</label>
+    <input type="email" id="identificador" name="identificador" class="form-control mb-3"
+           value="{{ identificador }}" placeholder="nome@pucpr.edu.br" maxlength="120"
+           autocomplete="username" required>
+    <label for="senha" class="form-label">Senha</label>
+    <input type="password" id="senha" name="senha" class="form-control mb-3"
+           maxlength="128" autocomplete="current-password" required>
+    <button type="submit" class="btn btn-primary">Entrar</button>
+  </form>
+{% endblock %}

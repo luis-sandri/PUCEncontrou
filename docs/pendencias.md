@@ -1,37 +1,60 @@
 # Pendências e propostas para revisão da equipe
 
-## Atualização SCRUM-8 — 27/10/2026
+## Integração SCRUM-8 com a main
 
-Marcelo confirmou exclusão física e aprovou o desenho em
-`superpowers/specs/2026-10-27-scrum-8-ocorrencias-design.md`. O núcleo usa as
-escolhas registradas no [guia](scrum-8.md); isso não equivale a registrar
-aprovação coletiva das demais propostas históricas abaixo.
+O modelo imutável, codec e núcleo CRUD de Marcelo estão implementados em
+`app/models/ocorrencia.py`, `app/models/alteracao_ocorrencias.py` e
+`app/services/nucleo_ocorrencias.py`. Consulte [o guia SCRUM-8](scrum-8.md).
+As implementações de contas JSON, autorização, upload e rotas de Luís e a AVL
+de Leandro foram preservadas. O núcleo usa lotes com estados anteriores e
+posteriores; a composição real com Lista/AVL/JSON ainda depende da integração.
+Foto é obrigatória nos dois tipos. A exclusão é física e limpa o vínculo no
+parceiro sem excluí-lo. Cancelamento de par permanece bloqueado conforme o
+desenho aprovado da SCRUM-8. Categorias e campos finais continuam em revisão.
+As referências abaixo a núcleo/modelo ainda não implementados são históricas.
 
-- Foto obrigatória em ambos os tipos e contas em JSON são decisões vigentes
-  de 19/10/2026 trazidas pelo usuário; foto opcional e SQLite ficam superados.
-- P01: campos mínimos provisórios implementados; categorias finais e demais
-  obrigatoriedades continuam em revisão. Sem limites de upload inventados.
-- P04: exclusão física escolhida; limpa vínculo preservando o parceiro.
-  Descarte físico das imagens e eventual auditoria continuam na integração.
-- P05: núcleo implementa vínculo 1:1 e resolução/reabertura conjuntas.
-  Desvinculação/substituição autônoma não foi implementada.
-- P06: cancelamento de ABERTO isolado; cancelamento de par bloqueado.
-  Justificativa e propagação continuam pendentes.
-- P07/P08: codec implementado; arquivos, migração de legados, recuperação,
-  persistência e publicação indivisível de Lista/AVL/JSON permanecem pendentes.
-- P09: adequar os esboços legados de SQLite para contas JSON com o responsável.
-- P10: serviços protegidos, verificação dos arquivos de foto e rotas são
-  SCRUM-16; o núcleo não pode ser exposto diretamente.
-- P11: Lista manual será implementada separadamente em SCRUM-9.
+## Entrega de Luís — 02/11/2026
 
-As seções seguintes preservam o histórico de 21/10/2026. Em caso de
-divergência, prevalecem as decisões e os limites desta atualização.
+**Implementado nesta branch:** rotas de ocorrências com formulários Jinja,
+cadastro/consulta públicos, filtros e período delegados à consulta injetada,
+projeções públicas sem dados internos, fotos por ID opaco, autorização de
+secretário recarregada no backend, edição, exclusão confirmada, vínculo,
+resolução com conferência presencial, reabertura e cancelamento isolado.
+A fábrica compõe esse serviço somente por habilitação explícita e com um
+compositor que forneça núcleo e consulta concretos. Não instancia protocolos.
 
-**Estado em 21/10/2026:** o solicitante selecionou alternativas para P01, P02, P03,
-P04, P05, P06 e P09. **Essas seleções não equivalem à aprovação coletiva.**
-Este documento registra o encaminhamento escolhido e as lacunas restantes,
-sem alterar as regras já aprovadas em [regras-negocio.md](regras-negocio.md).
-Não implementar como decisão final antes do alinhamento com a equipe.
+**Decisões de Luís nesta conversa:** JPEG/PNG até 1,5 MB; setor de guarda
+público; cancelamento de ABERTO sem vínculo **sem justificativa por enquanto**.
+A proposta antiga de justificativa obrigatória foi superada para esta entrega.
+P01/P06/P10 abaixo refletem essas respostas, sem inventar validação coletiva.
+
+**Dependências externas reais:** repositório de ocorrências, carregamento e
+publicação coerente de Lista/AVL/JSON (Matheus, SCRUM-13), consulta concreta
+por período (Leandro) e incorporação das branches publicadas de modelo/núcleo
+e estruturas. Nesta branch continuam como contratos dos responsáveis. Não há
+armazenamento fake ativo por padrão. O adaptador de testes não cumpre esses módulos.
+
+**Validação restante:** revisão visual com Mariana e validação manual de Luís;
+a ferramenta de navegador estava indisponível neste ambiente. Fluxos HTML,
+permissões, uploads e operações com o núcleo publicado foram verificados por testes.
+Não restam decisões de P09/P10 para implementar a fronteira HTTP de Luís.
+A execução integrada de produção aguarda as dependências acima. Consulte o
+[contrato de integração](integracao-ocorrencias.md) e os testes de cada módulo.
+
+**Estado em 31/10/2026:** Luís solicitou adaptar somente os pontos conflitantes
+às regras registradas nas branches de Marcelo. **Contas passam de SQLite para
+JSON**, e a documentação incorpora foto obrigatória, campos mínimos e o
+comportamento de exclusão/vínculos do registro SCRUM-8. A fonte é a
+[branch revisada](https://github.com/luis-sandri/PUCEncontrou/blob/03fb6fb23b5662587cada2c0b6caf263ef0d7303/docs/regras-negocio.md), com decisões de 19/10 e desenho de 27/10.
+Esta solicitação não acrescenta aprovação coletiva inexistente.
+
+As definições de Luís de 30/10 para P09/P10 permanecem: e-mail `@pucpr.edu.br`,
+gestão de secretários, sessão de 30 minutos e formulários Jinja. O módulo usa
+agora JSON local.
+Modelo, núcleo e Lista dos colegas **continuam em suas branches**, sem serem
+incorporados por esta adequação. O acabamento com Mariana e a integração de
+ocorrências continuam separados. Veja [regras](regras-negocio.md),
+[contratos](contratos.md) e [guia de validação](desenvolvimento-luis.md).
 
 **Convenção:** "seleção do solicitante" = proposta a submeter à equipe;
 "aprovado anteriormente" = regra já consolidada; "a definir" = decisão
@@ -42,15 +65,16 @@ aceites individuais.
 
 | ID | Seleção informada | O que continua aberto |
 | --- | --- | --- |
-| P01 | **Revisar** campos e categorias do Figma | Todos os campos, categorias, anexos e exposição pública |
+| P01 | Campos do desenho SCRUM-8; foto obrigatória JPEG/PNG até 1,5 MB; projeção pública com setor, definida em 02/11 | Categorias finais e demais políticas futuras |
 | P02 | Indexar **data da perda/achado** na AVL | Datas ausentes/aproximadas, hora, critérios de intervalo e desempate |
 | P03 | Usar pesos e limiar apresentados como **configuração inicial de testes** | Normalização, evidência mínima, calibragem e aprovação para produção |
-| P04 | Preferir **exclusão física** | Efeitos em vínculos, fotos, índice, persistência e eventuais trilhas |
-| P05 | Preferir **vínculo 1:1, realizado por secretário** | Desvinculação, substituição, cancelamento/exclusão e integridade |
-| P06 | Preferir **justificativa obrigatória ao cancelar** | Motivos, apresentação, persistência e propagação em pares |
-| P09 | Administração com **cadastro, edição, desativação e redefinição de senha** | Identificação, recuperação, sessões, campos e política de segurança |
+| P04 | **Exclusão física**, limpando o vínculo no parceiro e preservando seus dados/status | Remoção de imagens, índice, persistência e eventual trilha |
+| P05 | **Vínculo 1:1 entre tipos opostos abertos**, confirmado por secretário no serviço protegido | Desvinculação/substituição e integração indivisível |
+| P06 | **ABERTO sem vínculo, sem justificativa por enquanto**, confirmado por Luís em 02/11 | Política futura de justificativa e cancelamento de pares |
+| P09 | **JSON alinhado em 31/10**; definido por Luís em 30/10: nome, e-mail `@pucpr.edu.br` único; cadastro, edição, desativação, reativação e reset; sessão de 30 minutos; recuperação local do administrador | Revisão coletiva e validação de uso |
+| P10 | Contas e fronteira HTTP de ocorrências implementadas; formulários Jinja, sessão, CSRF, permissões e uploads | Integração com serviços reais, revisão visual com Mariana e validação manual |
 
-Os itens P07, P08, P10, P11 e P12 permanecem pendências técnicas e de
+Os itens P07, P08, P11 e P12, além dos fluxos de ocorrências em P10, permanecem pendências técnicas e de
 integração. O Figma é referência de comportamento da interface, **não**
 evidência de que o código funciona nem aprovação automática de regras.
 
@@ -58,8 +82,15 @@ evidência de que o código funciona nem aprovação automática de regras.
 
 ### P01 — Campos, categorias e exposição
 
-**Seleção do solicitante:** **revisar campos e categorias**; nenhum
-conjunto definitivo foi aprovado por essa seleção.
+**Definido em 02/11 para o HTTP:** JPEG/PNG até 1,5 MB. Visão pública: nome do
+objeto, tipo, status, categoria, data, local, descrição, cor, foto e setor de
+guarda. Referência de arquivo, recebimento, destinação e vínculo interno não
+são projetados ao público. Campos extras e controlados são rejeitados.
+
+**Alinhado com SCRUM-8 em 31/10:** nome, categoria, data da ocorrência, local
+e foto são obrigatórios; descrição e cor são opcionais. Foto é obrigatória
+em PERDIDO e ENCONTRADO, inclusive cadastro interno. Categorias continuam em
+texto livre; a lista final e outras decisões de exposição não foram fechadas.
 
 Categorias propostas anteriormente (continuam abertas):
 
@@ -75,27 +106,30 @@ Categorias propostas anteriormente (continuam abertas):
 **Referência do Figma (não aprovada como contrato):** os formulários
 separam PERDIDO/ENCONTRADO, identificam campos com `*`, incluem nome,
 categoria, data, descrição e local da perda/achado. O achado também informa
-setor de guarda (inclusive a condição de ainda não entregue). Há foto
-opcional e indicação visual de limite de 1,5 MB. O cadastro deve ser
+setor de guarda (inclusive a condição de ainda não entregue). A referência
+antiga de foto opcional foi superada por SCRUM-8. Em 02/11, Luís confirmou
+JPEG/PNG e limite de 1,5 MB, agora validados nos uploads. O cadastro deve ser
 curto, claro e funcionar sem conta pública.
 
 **Ainda a decidir:** lista final de categorias, categoria única/múltipla,
-campos mínimos de cada tipo, precisão/localização, data aproximada,
+detalhes adicionais de campos, precisão/localização, data aproximada,
 contato e exposição pública, cor, extensão/tamanho da descrição, formato
 de imagens/anexos, limites e validações, necessidade e conteúdo dos dados
 para conferência presencial. **Local de perda/achado e local de guarda
 são campos distintos por regra já aprovada**. A seleção não autoriza
 implementar os elementos do Figma como obrigatórios sem revisão.
 
-**Bloqueia:** modelo completo, formulários reais, DTOs, codec definitivo
-e correspondências que dependam desses atributos.
+**Ainda bloqueia:** integração dos formulários, uploads, DTOs públicos e
+correspondência. O modelo e codec mínimos já estão na branch SCRUM-8.
 **Revisão:** equipe; Marcelo (modelo), Mariana (interface) e Matheus (JSON).
 
 ### P02 — Datas e índice temporal
 
 **Seleção do solicitante:** utilizar na AVL a **data da perda para
 registros PERDIDO e a data do achado para registros ENCONTRADO**, e
-não a data do cadastro. A seleção está **pendente de aprovação da equipe**.
+não a data do cadastro. O modelo SCRUM-8 já usa `data_ocorrencia: date`
+obrigatória. Integração, fronteiras e tratamento de datas aproximadas ainda
+precisam de revisão com Leandro.
 
 **Referência de IHC:** a secretaria apresenta também data de recebimento
 pelo setor e tempo de guarda. São informações diferentes da data do
@@ -138,67 +172,54 @@ qualidade do matching. **Revisão:** André com equipe. Pode começar
 com parâmetros alteráveis e fixtures sintéticas, identificados
 explicitamente como experimento.
 
-### P04 — Exclusão física ou lógica
+### P04 — Exclusão física
 
-**Seleção do solicitante:** preferir **exclusão física**, sujeita a
-alinhamento da equipe. Isso significaria retirar definitivamente a
-ocorrência da Lista e do JSON, atualizar a AVL e não exibi-la em buscas.
+**Alinhado com o desenho SCRUM-8:** exclusão física. Quando há vínculo,
+remover o registro e limpar a referência no parceiro, preservando seus demais
+dados e status. A escolha foi registrada por Marcelo em 27/10 e adotada por
+Luís para conciliar esta branch em 31/10.
 
-**Ainda a decidir:** impacto sobre ocorrência vinculada (não criar
-referência órfã), exclusão ou retenção de imagens, política de
-confirmação e permissões, eventual necessidade de trilha mínima de
-auditoria/retensão e comportamento em falha durante a gravação.
-A modal de confirmação do Figma demonstra a ação, mas não decide
-sozinha os efeitos sobre dados.
-
-**Bloqueia:** operação real de `excluir`, testes do ciclo completo
-e integridade de vínculos/índice. **Revisão:** equipe; Marcelo, Matheus,
-Leandro e Luís.
+**Ainda a decidir/integrar:** descarte das fotos físicas, atualização da Lista,
+AVL e JSON, confirmação, falhas de gravação e eventual trilha. O núcleo prepara
+o lote, mas não remove imagens nem implementa a persistência de produção.
+Revisão: Marcelo, Matheus, Leandro e Luís.
 
 ### P05 — Vínculos e transições
 
-**Seleção do solicitante:** **um vínculo 1:1** entre um PERDIDO e um
-ENCONTRADO, **feito por secretário autenticado**, podendo o secretário
-atuar em qualquer bloco. A seleção está pendente de aprovação coletiva.
+**Alinhado com SCRUM-8:** vínculo 1:1 entre um PERDIDO e um ENCONTRADO, ambos
+ABERTO e sem parceiro. Vínculo não resolve automaticamente. A ação pertence
+ao secretário autenticado, sem restrição por bloco, validada no serviço de
+SCRUM-16 antes de usar o núcleo interno.
 
-**Aprovado anteriormente:** sugerir correspondência não vincula nem
-altera status automaticamente; após confirmação de devolução presencial,
-as duas ocorrências vinculadas passam a RESOLVIDO; reabrir uma reabre
-a outra. Não permitir dois parceiros para a mesma ocorrência se 1:1
-for aprovado.
+Resolução após conferência presencial e reabertura atingem os dois parceiros.
+Cancelamento de par fica bloqueado enquanto não houver política. A exclusão
+segue P04 e preserva o parceiro sem referência órfã.
 
-**Ainda a decidir:** ação e permissão para desfazer/substituir vínculo,
-possibilidade de vincular antes da conferência presencial, elegibilidade
-por status, vínculo de pares já encerrados, cancelamento e exclusão de
-um parceiro, como manter histórico mínimo e comportamento atômico nas
-mutações/JSON. Não confundir vínculo com conclusão da devolução.
-
-**Bloqueia:** esquema de associação, rotas de vínculo, controle de
-permissões e atualização conjunta. **Revisão:** equipe; Marcelo e Luís
-com Matheus e André.
+**Ainda aberto:** desfazer/substituir vínculo como ação autônoma, política de
+cancelamento de pares e integração indivisível com Lista/AVL/JSON. O núcleo
+prepara lotes; não fornece autorização ou persistência de produção.
+Revisão: Marcelo, Luís, Matheus e André.
 
 ### P06 — Cancelamento
 
-**Seleção do solicitante:** exigir **justificativa obrigatória** quando
-secretário mudar a situação para CANCELADO; decisão ainda não ratificada
-pela equipe.
+**Definido expressamente por Luís em 02/11/2026:** seguir o núcleo atual,
+cancelando somente ABERTO sem vínculo, **sem justificativa por enquanto**.
+A proposta anterior de justificativa obrigatória deixa de bloquear esta entrega.
+Secretário é exigido tanto na rota como no serviço. Cancelamento de par segue
+bloqueado pelo núcleo, sem propagação presumida.
 
-**Aprovado anteriormente:** existem ABERTO, RESOLVIDO e CANCELADO;
-secretários gerenciam situação, com reabertura possível nos termos
-já definidos para ocorrências vinculadas.
-
-**Ainda a decidir:** motivos pré-definidos ou texto livre, tamanho e
-validação da justificativa, quem poderá visualizá-la, registro no JSON,
-qual transição pode cancelar ou reabrir, propagação de cancelamento ao
-par e diferença entre cancelamento e exclusão física. O Figma fornece
-um fluxo de cancelamento, mas não resolve todas essas regras.
-
-**Bloqueia:** mutações finais e testes de cancelamento/reabertura.
-**Revisão:** equipe; Marcelo, Luís e Mariana.
+**Futuro:** se a equipe adotar justificativa ou cancelamento de pares, definir
+campo, persistência, apresentação e propagação antes de alterar o contrato.
+Não há nova aprovação coletiva registrada nesta definição do solicitante.
 
 ## Pendências técnicas e de integração identificadas nesta preparação
 
 ### P07 — Schema JSON, codec e tratamento de arquivo
+
+**Alinhamento em 31/10:** ocorrências e contas ficam em arquivos JSON locais
+separados. O codec de ocorrências está na branch SCRUM-8; o arquivo de ocorrências
+continua com Matheus. O JSON de contas é mantido por Luís, com envelope v1;
+não define o esquema de ocorrências.
 
 Revisar envelope versionado ou formato simples, tipos de ID/data, validação
 do snapshot, arquivo inexistente, migração, backup e recuperação de dados.
@@ -209,6 +230,11 @@ Revisão: Matheus e Marcelo; Leandro revisa reconstrução e Luís configuraçã
 Parte dos trabalhos pode usar codec fake sem depender de P01 final.
 
 ### P08 — Coerência, concorrência e falhas
+
+Contas usam leitura por operação e substituição atômica de snapshot JSON, com
+lock entre requisições da mesma instância. Usar um processo por arquivo e CLI
+com servidor parado. A coerência Lista/AVL/JSON de ocorrências abaixo continua
+na integração SCRUM-13; não foi implementada nesta adequação.
 
 Definir a estratégia para que Lista, AVL e JSON permaneçam coerentes após
 falha de escrita e mutação de dois registros. Proposta: preparar alteração,
@@ -224,46 +250,75 @@ de mutações reais, sem bloquear os algoritmos isolados.
 
 ### P09 — Contas e alcance dos perfis
 
-**Seleção do solicitante:** o administrador deverá **cadastrar, editar,
-desativar e redefinir senhas** de contas de secretários. Essa lista de
-operações requer aprovação da equipe; não inclui exclusão física de
-contas nem autocadastro público. O Figma atual contempla o login da
-secretaria, mas **não evidencia a tela completa de gestão de contas**.
+**Definido com Luís em 30/10, com persistência alinhada em 31/10 para JSON.**
+Nome, e-mail institucional, gestão e sessão permanecem iguais. SQLite foi
+retirado do projeto.
 
-**Aprovado anteriormente:** apenas administrador gerencia contas,
-secretários não gerenciam contas nem ficam restritos a ocorrências do
-próprio bloco; administrador não herda automaticamente ações de
-secretário. A conta administrativa inicial é provisionada com segurança.
+| Tema | Seleção de Luís e comportamento implementado |
+| --- | --- |
+| Persistência | JSON local separado das ocorrências, responsabilidade de Luís |
+| Login | E-mail institucional **`@pucpr.edu.br`**, confirmado expressamente por Luís |
+| Dados | Nome e e-mail; ID gerado pelo backend, sem bloco obrigatório |
+| Unicidade | E-mail único, removendo espaços externos e ignorando maiúsculas/minúsculas |
+| Gestão | Administrador lista, cadastra, edita nome/e-mail, desativa, reativa e redefine senhas de secretários |
+| Permissões | Secretário não gerencia contas; administrador não herda ações de secretário |
+| Desativação | Impede login e invalida sessões existentes; reativação exige novo login |
+| Redefinição | Administrador confere a identidade antes de definir uma nova senha; sessões anteriores deixam de valer |
+| Sessão | Cookie assinado do Flask, duração absoluta de 30 minutos e consulta da conta ativa no backend |
+| Administrador inicial | CLI local com senha oculta e confirmação, sem senha padrão ou cadastro público |
+| Recuperação do administrador | CLI local explícita, preservando a conta e redefinindo seu e-mail/senha |
+| Senhas | Hash Werkzeug; limite técnico de 12–128 caracteres Unicode válidos, sem normalização |
 
-**Ainda a decidir:** identificador de login (o formulário do Figma
-exibe e-mail institucional, ainda como referência), campos e unicidade,
-desativação e bloqueio de sessões ativas, recuperação/redefinição
-segura de senhas, ciclo de sessão, campos visíveis na administração,
-proteção de credenciais e processo inicial. Não gerar login/senha padrão.
+Não fazem parte deste escopo: exclusão física de contas, criação de novos
+administradores, recuperação por e-mail ou alteração de credenciais próprias.
+A conta mantém apenas um contador para invalidar acessos após mudanças de
+credenciais/situação; não existe mais tabela de sessões.
 
-**Revisão:** Luís e equipe. **Bloqueia:** modelo definitivo de contas,
-gestão administrativa, autenticação e rotas protegidas.
+**O que falta:** Luís validar os fluxos e a equipe revisar essas escolhas antes
+da integração final. O acabamento dos formulários deve ser alinhado com Mariana.
+Não há dúvida de domínio de e-mail, reativação ou duração de sessão pendente
+para implementar a versão atual. Revisão da equipe não impede o teste local.
 
 ### P10 — Contrato HTTP e proteção antes das rotas
 
-Fechar payloads, contextos Jinja, filtros, paginação, mensagens, redirects,
-tratamento de erros e eventuais respostas JSON. Definir proteção CSRF para
-POSTs, política de sessão e configuração HTTPS antes de expor mutações.
-Não confundir ocultação de botão com autorização no backend.
+**Escopo de contas definido com Luís em 30/10/2026 e aplicado ao código:**
 
-**Comportamentos do Figma a detalhar no contrato, sem criar P13–P18:**
-modal de escolha de tipo com fechar/voltar; navbar ativa sem repassar
-cliques à tela; navegação e transições; busca por texto/código e filtros
-combinados por tipo, categoria, local e setor; estados vazios; validação,
-mensagens e confirmação do cadastro; explicação pública de status;
-área da secretaria (todos os blocos e "meu setor"); conferência presencial,
-cancelamento, exclusão, resolução e reabertura. Transições visuais não
-comprovam que backend, dados ou autorização estejam implementados.
+- Formulários HTML renderizados pelo Flask/Jinja; sucesso em POST redireciona
+  com mensagem, erro reexibe campos seguros e nunca a senha.
+- Login/logout e administração usam cookie de sessão do Flask; conta ativa e
+  perfil são verificados no backend. Sessões expiram em 30 minutos.
+- Hash de senha, persistência JSON validada, campos permitidos explícitos e CSRF em
+  formulários que alteram dados são as proteções básicas mantidas.
+- A API JSON e a tabela de sessões do primeiro protótipo foram retiradas.
+- Limitação de tentativas, recuperação automática por e-mail e infraestrutura
+  de publicação não são requisitos desta entrega acadêmica local. Se houver
+  publicação posterior, configuração HTTPS/cookie Secure deve ser revisada.
 
-Revisão: Luís e Mariana; André valida a matriz no backend. Rascunhos de
-rotas e convenções de erro estão em [contratos](contratos.md).
+**Implementado para avaliar:** telas mínimas de login, sessão, listagem,
+cadastro, edição, ativação/desativação e reset. Não são reprodução final do
+Figma. Mariana continua responsável pela integração visual.
+
+**Atualização de 02/11:** a fronteira HTTP de Luís está implementada com
+cadastro, listagem/detalhe, foto, filtros combinados e período, edição, exclusão,
+vínculo, resolução/reabertura e cancelamento conforme P06. Os contextos e campos
+constam em [integração](integracao-ocorrencias.md). São telas mínimas, com
+acabamento a revisar com Mariana; não se afirma reprodução final do Figma.
+
+A fábrica exige dependências concretas via compositor antes de registrar
+essas rotas. A carga de produção e a persistência indivisível de ocorrências
+continuam com os responsáveis. A consulta por período é delegada ao serviço
+injetado para preservar o uso da AVL, sem fallback por varredura no HTTP.
+
+**O que falta:** integrar os componentes de produção e revisar as telas com
+Mariana. A ferramenta de navegador estava indisponível; a validação funcional
+foi realizada por cliente Flask e em ensaio com o núcleo publicado. Nenhuma
+mensagem externa foi enviada nem se registrou aprovação de outra pessoa.
 
 ### P11 — Rubrica e detalhes das estruturas manuais
+
+A Lista manual está implementada na branch SCRUM-9: buffer fixo, capacidade
+padrão 4, expansão por duplicação e cópia/deslocamento manuais. A AVL está na
+branch de Leandro. Esta adequação não copia nem altera essas implementações.
 
 Confirmar com o professor a representação permitida do array, critérios
 de demonstração/complexidade, capacidade inicial e política de crescimento.
@@ -284,7 +339,9 @@ fixação, mas mudanças incompatíveis devem atualizar consumidores juntos.
 ## Prioridade para liberar a integração
 
 **Antes de converter seleções em requisitos:** registrar a validação coletiva
-de P02, P04, P05, P06 e P09 e a configuração experimental de P03.
+dos pontos futuros de P02/P09 e a configuração experimental de P03.
+P04/P05 seguem os comportamentos do desenho SCRUM-8. P06 segue a definição
+de Luís em 02/11 para cancelar isolados sem justificativa por enquanto.
 P01 continua em revisão aberta. Os desenvolvedores podem trabalhar com
 mocks/testes parametrizados, mas não devem integrar comportamento definitivo
 com base apenas nas seleções deste documento.
@@ -293,10 +350,12 @@ com base apenas nas seleções deste documento.
 | --- | --- | --- |
 | Antes de modelo/formulários/codec finais | P01, P02, identidade em P12 | Lista, AVL, layout com fixtures, testes de cenários |
 | Antes de persistência/mutações integradas | P04, P05, P07, P08 | Algoritmos, adaptadores isolados, autenticação com fakes |
-| Antes de endpoints protegidos | P05, P06, P09, P10 | Templates, serviços testados isoladamente, CLI futura |
+| Antes de integrar rotas protegidas de ocorrências | P05, P06 e parte de ocorrências de P10 | Contas já podem ser testadas; P09/P10 de contas definidos por Luís aguardam revisão coletiva |
 | Antes de matching final e entrega acadêmica | P03, P11, P12 | Integração progressiva dos fluxos já revisados |
 
 Para registrar uma decisão, usar o ID Pxx, texto exato aprovado, data,
 participantes e módulos impactados; atualizar regras/contratos no mesmo PR.
-As seleções de 21/10/2026 permanecem **propostas para decisão da equipe**;
-nenhuma delas foi promovida a regra aprovada por esta atualização.
+As seleções de 21/10 permanecem propostas coletivas. Em 30/10, Luís detalhou
+P09/P10 para sua branch. Em 31/10, pediu adoção das regras conflitantes de
+SCRUM-8/9 conforme as fontes acima. Não foram inventados participantes, reuniões
+ou novas aprovações dos demais integrantes.

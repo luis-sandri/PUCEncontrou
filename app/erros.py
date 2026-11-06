@@ -1,4 +1,4 @@
-"""Vocabulário técnico preliminar de erros, sem tratamento HTTP implementado."""
+"""Erros esperados do domínio e serviços, traduzidos para HTTP pelas rotas."""
 
 
 class ErroAplicacao(Exception):
@@ -25,5 +25,13 @@ class ErroPersistencia(ErroAplicacao):
     """Leitura ou gravação não concluída; não ocultar perda de dados."""
 
 
+class ContaNaoEncontrada(ErroAplicacao):
+    """Conta de secretário inexistente para a operação solicitada."""
+
+
+class IdentificadorEmUso(ErroValidacao):
+    """Identificador normalizado já pertence a outra conta."""
+
+
 class ConflitoAlteracao(ErroAplicacao):
-    """O estado mudou desde a preparação; refazer a operação antes de confirmar."""
+    """Lote preparado sobre um estado que já foi alterado."""
