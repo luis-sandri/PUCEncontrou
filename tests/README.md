@@ -2,6 +2,10 @@
 
 - `test_app.py`: testes executáveis da base Flask mantidos por Luís.
 - `unit/`: testes de cada módulo, pelo responsável pelo módulo.
+- `unit/test_ocorrencia.py`, `test_alteracao_ocorrencias.py` e
+  `test_nucleo_ocorrencias.py`: modelo/codec e núcleo CRUD de SCRUM-8;
+  armazenamento transacional fake, sem substituir a Lista de produção.
+- `exemplo_scrum8.py`: demonstração executável com fake somente para estudo.
 - `integration/`: testes entre módulos, coordenados por André.
 - `conftest.py`: fixtures comuns; coordenar mudanças com Luís e André.
 

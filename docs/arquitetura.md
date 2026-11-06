@@ -1,5 +1,18 @@
 # Arquitetura e desenvolvimento em paralelo
 
+## Integração SCRUM-8 com a main
+
+O modelo imutável, codec e núcleo CRUD de Marcelo estão implementados em
+`app/models/ocorrencia.py`, `app/models/alteracao_ocorrencias.py` e
+`app/services/nucleo_ocorrencias.py`. Consulte [o guia SCRUM-8](scrum-8.md).
+As implementações de contas JSON, autorização, upload e rotas de Luís e a AVL
+de Leandro foram preservadas. O núcleo usa lotes com estados anteriores e
+posteriores; a composição real com Lista/AVL/JSON ainda depende da integração.
+Foto é obrigatória nos dois tipos. A exclusão é física e limpa o vínculo no
+parceiro sem excluí-lo. Cancelamento de par permanece bloqueado conforme o
+desenho aprovado da SCRUM-8. Categorias e campos finais continuam em revisão.
+As referências abaixo a núcleo/modelo ainda não implementados são históricas.
+
 ## Entrega da fronteira de Luís — 02/11/2026
 
 `AtendimentoOcorrencias` envolve o núcleo de Marcelo com autorização e uploads;

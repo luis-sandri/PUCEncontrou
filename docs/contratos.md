@@ -1,5 +1,33 @@
 # Contratos de integração e módulos de Luís
 
+## Integração SCRUM-8 com a main
+
+O modelo imutável, codec e núcleo CRUD de Marcelo estão implementados em
+`app/models/ocorrencia.py`, `app/models/alteracao_ocorrencias.py` e
+`app/services/nucleo_ocorrencias.py`. Consulte [o guia SCRUM-8](scrum-8.md).
+As implementações de contas JSON, autorização, upload e rotas de Luís e a AVL
+de Leandro foram preservadas. O núcleo usa lotes com estados anteriores e
+posteriores; a composição real com Lista/AVL/JSON ainda depende da integração.
+Foto é obrigatória nos dois tipos. A exclusão é física e limpa o vínculo no
+parceiro sem excluí-lo. Cancelamento de par permanece bloqueado conforme o
+desenho aprovado da SCRUM-8. Categorias e campos finais continuam em revisão.
+As referências abaixo a núcleo/modelo ainda não implementados são históricas.
+
+## Atualização SCRUM-8 — 27/10/2026
+
+O modelo concreto e o núcleo interno foram implementados conforme desenho
+aprovado por Marcelo. Seu contrato vigente está em [SCRUM-8](scrum-8.md):
+`Ocorrencia`, `SituacaoGuarda`, `AlteracaoOcorrencia`, `LoteOcorrencias`,
+`NucleoOcorrencias` e `ArmazenamentoOcorrenciasPorta`. Essa seção e o guia
+substituem os trechos v0 divergentes abaixo sobre modelo e CRUD interno.
+
+Os protocolos externos `LeituraOcorrenciasPorta` e `ServicoOcorrenciasPorta`
+mantêm suas assinaturas: são esboços do serviço autenticado de SCRUM-16,
+não a classe interna `NucleoOcorrencias`. Nenhuma rota nova foi registrada.
+SCRUM-13 implementará a porta de aplicação atômica com Lista/AVL/JSON.
+Foto é obrigatória nos dois tipos. Contas passam a JSON; referências antigas
+a SQLite descrevem a preparação anterior e aguardam ajuste do módulo de contas.
+
 **Estado: esboços técnicos propostos para revisão dos responsáveis.**
 As regras explicitamente aprovadas estão em [regras de negócio](regras-negocio.md).
 Os nomes, tipos auxiliares, retornos e convenções desta página não são uma
@@ -40,7 +68,7 @@ Propagação de cancelamento de par continua bloqueada.
 ## Convenções e composição propostas
 
 - IDs são strings opacas e estáveis; consumidor não interpreta nem usa posição
-  da Lista como ID. UUID, sequência ou outro gerador ainda precisam de revisão.
+  da Lista como ID. O modelo concreto gera UUID textual e preserva IDs na recarga.
 - `date` representa uma chave de calendário já convertida pelo serviço.
   Não escolher implicitamente entre data de perda/achado e data de cadastro.
 - `Iterable`/`Iterator` são retornos percorríveis, sem promessa de `list`,
@@ -223,7 +251,7 @@ vincular(perdido_id: str, encontrado_id: str, *, ator: ContaAdministrativaPorta)
 
 O serviço é o único coordenador de mutações da Lista, índice e snapshot.
 Não permitir edição direta de objetos retornados para contornar regras.
-Definir DTOs/cópias ou imutabilidade no modelo concreto. A estratégia de
+O modelo concreto já é imutável. A estratégia de
 atomicidade memória/JSON é parte da integração P08, não existe nesta base.
 
 ## Correspondências — André
