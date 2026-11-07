@@ -270,10 +270,17 @@ sugerir(ocorrencia_id: str) -> Sequence[CandidatoCorrespondenciaPorta]
 ```
 
 O contrato mínimo retorna referências a candidatos, sem status alterado ou
-afirmação de propriedade. Pontuação, justificativas, ordenação, critérios de
-elegibilidade, limite, pesos e valores ausentes precisam de P03. Não há
-`5`, `60` ou pesos fixos no código. A política deve ser determinística,
-com testes reprodutíveis e sem qualquer provedor de IA.
+afirmação de propriedade. `Correspondencias(leitura, configuracao)` implementa
+essa assinatura e retorna uma tupla de `CandidatoCorrespondencia`, que também
+expõe `pontuacao: float` em 0–100, sem ampliar o protocolo mínimo.
+A leitura usa `LeituraOcorrenciasPorta` e deve fornecer o modelo completo
+`Ocorrencia`; o protocolo mínimo de identidade/estado não basta para pontuar.
+Não há `5`, `60` ou pesos padrão no serviço: a configuração explícita contém
+os cinco pesos, limiar, limite e janela de dias. As decisões experimentais de
+normalização, elegibilidade, ordenação e valores ausentes estão no
+[guia de correspondências](correspondencias.md); não encerram P03 nem
+representam calibragem aprovada para produção. O serviço é determinístico,
+sem escrita ou provedor de IA, e ainda não foi conectado às rotas.
 
 ## Contas JSON e autenticação — Luís
 
