@@ -1,10 +1,9 @@
-# Fronteira de ocorrências de Luís — 02/11/2026
+# Integração de ocorrências — 10/11/2026
 
-A parte de Luís entrega rotas, autorização, entrada/saída, fotos e composição
-por injeção. O núcleo de operações continua com Marcelo; carga, persistência
-JSON e publicação coerente da Lista/AVL continuam com Matheus; a consulta por
-período continua com Leandro. Não há implementação desses módulos em substituição
-aos colegas. Os fakes de `tests/` não são usados na configuração padrão.
+A fronteira HTTP, autorização, uploads, núcleo, Lista Dinâmica, AVL, repositório
+JSON e compositor concreto estão integrados nesta branch. Os fakes de `tests/`
+continuam exclusivos dos testes. A composição usa o repositório versionado,
+as estruturas manuais e o índice AVL de datas para preparar snapshots completos.
 
 ## O que está concluído
 
@@ -50,26 +49,31 @@ indivisíveis, criar o núcleo de Marcelo e a consulta de Leandro e devolver
 `DependenciasOcorrencias`. Falha de carga deve abortar a inicialização, sem
 publicar estado parcial ou substituir arquivo inválido por vazio.
 
-**Esse compositor de produção ainda depende da entrega dos responsáveis.**
-A fábrica, os contratos de entrada e o serviço de Luís estão prontos para
-recebê-lo. Não ligar o núcleo diretamente a rotas nem apontar a configuração
-para os fakes dos testes. Sem compositor concreto, habilitar o módulo produz
-erro explícito de inicialização; não ativa um CRUD fictício.
+O compositor padrão é `app.composicao_producao:compor_ocorrencias`; pode ser
+substituído explicitamente por `PUC_OCORRENCIAS_COMPOSITOR`. Ele falha de forma
+explícita se o JSON não existir ou estiver inválido. Para preparar o arquivo
+sem sobrescrever dados:
 
-Depois da integração dos componentes, configurar localmente:
-
-```dotenv
-PUC_CONTAS_HABILITADAS=true
-PUC_OCORRENCIAS_HABILITADAS=true
-PUC_OCORRENCIAS_COMPOSITOR=modulo_real:funcao
-PUC_FOTOS_DIRETORIO=instance/fotos
+```powershell
+.\.venv\Scripts\python.exe -m flask --app app ocorrencias inicializar
 ```
 
-`modulo_real:funcao` é um marcador de documentação, não um módulo existente.
-A função é chamada uma vez por app. Instâncias não compartilham serviços globais.
-A consulta temporal é delegada a `buscar_periodo(inicio, fim)`; o HTTP não
-substitui a AVL por varredura. Cada responsável deve garantir o uso das
-estruturas acadêmicas no armazenamento/consulta de produção.
+`inicializar` cria um snapshot vazio somente quando explicitamente chamado;
+se o arquivo existir, valida-o sem regravar. A fábrica não cria persistência.
+O snapshot JSON usa `{"versao": 1, "ocorrencias": [...]}`; arquivo ausente,
+inválido ou incompatível gera `ErroPersistencia`.
+
+Cada alteração prepara uma nova Lista e AVL manuais, grava o snapshot em
+temporário no mesmo diretório e publica as estruturas em memória somente após
+o `os.replace` concluir. Uma falha de validação ou escrita preserva o estado
+anterior. O lock coordena requisições da instância Flask; execute **uma
+instância/processo por arquivo**, pois não há lock multiprocesso. O índice usa `data_ocorrencia` e
+pares `(data, id)`; a consulta resolve os IDs em ocorrências sem expor nós às
+rotas/templates.
+
+Para login e gestão da equipe, habilite `PUC_CONTAS_HABILITADAS=true`.
+O primeiro administrador é provisionado por `flask --app app contas inicializar`;
+nenhuma conta ou senha padrão é criada pela aplicação.
 
 ## Entrada do serviço
 

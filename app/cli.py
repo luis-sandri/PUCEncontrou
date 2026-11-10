@@ -5,6 +5,7 @@ from flask import current_app
 from flask.cli import with_appcontext
 
 from app.erros import ErroAplicacao, ErroPersistencia
+from app.repositories.json_ocorrencias import RepositorioOcorrenciasJSON
 
 
 @click.group("contas")
@@ -57,3 +58,21 @@ def recuperar_administrador():
         mensagem = "Arquivo de contas indisponível." if isinstance(exc, ErroPersistencia) else str(exc)
         raise click.ClickException(mensagem) from None
     click.echo("Acesso do administrador recuperado; faça login novamente.")
+
+
+@click.group("ocorrencias")
+def ocorrencias_cli():
+    """Preparação local explícita do arquivo de ocorrências."""
+
+
+@ocorrencias_cli.command("inicializar")
+@with_appcontext
+def inicializar_ocorrencias():
+    """Cria um snapshot vazio ou valida o arquivo existente sem sobrescrevê-lo."""
+    try:
+        RepositorioOcorrenciasJSON(current_app.config["OCORRENCIAS_JSON"]).inicializar()
+    except ErroAplicacao:
+        raise click.ClickException(
+            "Não foi possível inicializar o arquivo de ocorrências."
+        ) from None
+    click.echo("Arquivo de ocorrências inicializado ou validado.")

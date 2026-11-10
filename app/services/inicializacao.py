@@ -1,15 +1,15 @@
-"""Integração futura de Matheus com Marcelo, Leandro e Luís.
+"""Leitura validada do snapshot usado pela composição de produção."""
 
-Esboço de composição (não implementado, não chamado pela fábrica):
+from collections.abc import Iterable
 
-inicializar_ocorrencias(
-    repositorio: RepositorioOcorrenciasPorta,
-    lista: ListaDinamicaPorta[OcorrenciaPorta],
-    indice: IndiceDatasPorta,
-    extrair_data: Callable[[OcorrenciaPorta], date],
-) -> None
+from app.models.alteracao_ocorrencias import validar_estado_ocorrencias
+from app.models.ocorrencia import Ocorrencia
 
-Carregar e validar o snapshot JSON, preencher a Lista manual e reconstruir
-a AVL. Não assumir qual campo de data será indexado; ver docs/pendencias.md.
-Falhas não devem deixar um estado parcialmente inicializado utilizável.
-"""
+
+def carregar_snapshot_ocorrencias(
+    ocorrencias: Iterable[Ocorrencia],
+) -> tuple[Ocorrencia, ...]:
+    """Valida o snapshot inteiro antes de construir Lista e índice temporal."""
+    estado = tuple(ocorrencias)
+    validar_estado_ocorrencias(estado)
+    return estado

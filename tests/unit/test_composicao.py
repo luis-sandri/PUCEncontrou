@@ -18,7 +18,7 @@ def configuracao(tmp_path, **extra):
 
 def test_sem_compositor_falha_sem_criar_arquivos(tmp_path):
     with pytest.raises(RuntimeError, match="compositor concreto"):
-        create_app(configuracao(tmp_path))
+        create_app(configuracao(tmp_path, OCORRENCIAS_COMPOSITOR=None))
     assert list(tmp_path.iterdir()) == []
 
 

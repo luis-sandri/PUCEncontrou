@@ -187,7 +187,7 @@ Mudança da data indexada remove o par antigo e insere o novo, coordenada pelo
 serviço. A AVL não recebe posições da Lista e não é a fonte dos registros.
 Qual data, ausência de data, timezone e empates são P02, ainda pendentes.
 
-## Persistência JSON e reconstrução — Matheus
+## Persistência JSON e reconstrução — integração de produção
 
 Código: `app/repositories/json_ocorrencias.py`.
 
@@ -196,32 +196,26 @@ carregar() -> Iterable[OcorrenciaPorta]
 salvar(ocorrencias: Iterable[OcorrenciaPorta]) -> None
 ```
 
-O caminho e codec são dependências do repositório futuro. `carregar` devolve
-registros do domínio, nunca nós AVL nem uma Lista global. `salvar` recebe o
-snapshot completo e não altera objetos recebidos nem atualiza estruturas.
-O formato externo versionado é proposta; nenhum esquema JSON foi imposto.
+`RepositorioOcorrenciasJSON(caminho)` lê e grava registros `Ocorrencia` em
+UTF-8 no envelope `{"versao": 1, "ocorrencias": [...]}`. O codec preserva
+datas ISO, IDs, estados, fotos e vínculos. `carregar` valida o snapshot inteiro,
+incluindo IDs e vínculos; ausência, versão desconhecida, corrupção ou registros
+inválidos geram `ErroPersistencia`, sem substituição silenciosa. O construtor e
+a fábrica não criam arquivos. `flask --app app ocorrencias inicializar` cria
+explicitamente um snapshot vazio ou valida o existente sem regravá-lo.
 
-Condições técnicas propostas: UTF-8, datas em representação ISO acordada,
-IDs/status/vínculos preservados, erro de leitura/escrita como `ErroPersistencia`,
-arquivo inválido jamais substituído por vazio silenciosamente. Política para
-arquivo inexistente, migração e backups deve ser fechada em P07.
+`ArmazenamentoOcorrencias` coordena os lotes do núcleo com a Lista manual, a
+AVL manual e o snapshot JSON. Constrói as estruturas candidatas antes de
+persistir; só publica as referências novas depois da gravação atômica por
+arquivo temporário e `os.replace`. A falha mantém a publicação anterior.
+Leituras e escritas são protegidas por `RLock` dentro de uma instância; a
+operação local é de **um processo por arquivo** e não oferece coordenação
+multiprocesso.
 
-`services/inicializacao.py` reserva o seguinte ponto de integração:
-
-```python
-inicializar_ocorrencias(
-    repositorio: RepositorioOcorrenciasPorta,
-    lista: ListaDinamicaPorta[OcorrenciaPorta],
-    indice: IndiceDatasPorta,
-    extrair_data: Callable[[OcorrenciaPorta], date],
-) -> None
-```
-
-Este rascunho só existe na documentação/docstring. Exige destinos novos/vazios
-ou política explícita de reconstrução; não carregar duas vezes duplicando
-registros. Validar snapshot antes de expor os serviços; falha não pode publicar
-Lista preenchida parcialmente com AVL inconsistente. IDs duplicados e referências
-inexistentes precisam ser detectados. Não chamar `salvar` ao carregar.
+`ConsultaPeriodoAVL` usa a data obrigatória `data_ocorrencia` e chaves
+compostas `(data, id)`. A consulta resolve IDs para registros mantendo a AVL
+privada às camadas de serviço/estrutura. `carregar_snapshot_ocorrencias`
+valida o snapshot antes da construção das estruturas.
 
 ## Serviço de ocorrências — Marcelo com revisão de Luís
 
@@ -404,12 +398,12 @@ Sem login, páginas protegidas redirecionam para `/login` (302). Erros são HTML
 409 e-mail duplicado, 413 corpo excessivo, 415 conteúdo sem formulário, 503
 persistência com mensagem genérica. Respostas do módulo usam `no-store`.
 
-**Fronteira de ocorrências concluída em 02/11:** rotas, formulários,
-autorização, uploads e composição estão implementados por Luís. Por padrão,
-continuam desligados; para registrar, a fábrica exige contas habilitadas e
-`OCORRENCIAS_COMPOSITOR` que devolva dependências concretas já carregadas.
-Esse compositor de produção depende dos componentes de Matheus/Leandro e
-não foi substituído por fakes. O núcleo dos colegas não foi copiado nesta branch.
+**Integração de produção:** rotas, formulários, autorização, uploads e a
+composição concreta estão implementados. Por padrão, os módulos continuam
+desligados; para registrar ocorrências, habilite contas e ocorrências. O
+compositor padrão é `app.composicao_producao:compor_ocorrencias`, com
+sobrescrita opcional por configuração. Ele exige um JSON local inicializado e
+não usa fakes de teste.
 
 O [contrato de integração](integracao-ocorrencias.md) lista todos os caminhos,
 campos e controles. Inclui cadastro/consulta públicos, detalhe/foto por ID,
@@ -418,10 +412,9 @@ até 1,5 MB e setor de guarda público foram confirmados por Luís em 02/11.
 Erros HTML incluem 404 de ocorrência, 409 de lote obsoleto e 413 de corpo,
 além dos controles de CSRF, sessão e falhas genéricas de persistência.
 
-A carga/publicação coerente de JSON/Lista/AVL de produção continua com os
-responsáveis. O atendimento de Luís não acessa estruturas ou arquivo de
-ocorrências diretamente. A consulta temporal sempre é delegada ao serviço
-injetado; a interface não substitui a AVL por estrutura pronta ou varredura.
+O atendimento HTTP não acessa estruturas ou arquivo de ocorrências diretamente.
+A consulta temporal sempre é delegada ao serviço injetado; a interface não
+substitui a AVL por estrutura pronta ou varredura.
 
 ## Erros e revisão de mudanças
 

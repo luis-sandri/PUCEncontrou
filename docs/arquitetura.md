@@ -1,5 +1,12 @@
 # Arquitetura e desenvolvimento em paralelo
 
+## Composição concreta — 10/11/2026
+
+`app.composicao_producao` conecta o repositório JSON, a Lista Dinâmica manual,
+a AVL manual, o núcleo CRUD e a consulta temporal. O JSON é inicializado por
+comando explícito; iniciar a fábrica não cria persistência. A aplicação usa um
+processo por arquivo e mantém as rotas optativas desligadas por padrão.
+
 ## Integração SCRUM-9 — 06/11/2026
 
 A classe `ListaDinamica[T]` está implementada em `app/structures/lista_dinamica.py`,

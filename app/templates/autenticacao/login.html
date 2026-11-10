@@ -1,17 +1,35 @@
 {% extends "contas/layout.html" %}
 {% block title %}Entrar · PUC Encontrou{% endblock %}
 {% block conteudo_contas %}
-  <h1>Entrar</h1>
-  <p>Acesso de secretários e administrador.</p>
-  <form method="post" action="{{ url_for('autenticacao.login') }}" class="col-md-6">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label for="identificador" class="form-label">E-mail institucional</label>
-    <input type="email" id="identificador" name="identificador" class="form-control mb-3"
-           value="{{ identificador }}" placeholder="nome@pucpr.edu.br" maxlength="120"
-           autocomplete="username" required>
-    <label for="senha" class="form-label">Senha</label>
-    <input type="password" id="senha" name="senha" class="form-control mb-3"
-           maxlength="128" autocomplete="current-password" required>
-    <button type="submit" class="btn btn-primary">Entrar</button>
-  </form>
+  <section class="login-layout">
+    <div class="login-message">
+      <span class="login-mark" aria-hidden="true">P</span>
+      <p class="page-eyebrow">Área restrita</p>
+      <h1>Bem-vindo de volta.</h1>
+      <p>Acesse a área da equipe para acompanhar as ocorrências e administrar as contas autorizadas.</p>
+      <a href="{{ url_for('publicas.inicio') }}">← Voltar ao início</a>
+    </div>
+    <div class="login-form-panel">
+      <div class="page-heading">
+        <p class="page-eyebrow">PUC Encontrou</p>
+        <h2>Entrar na sua conta</h2>
+        <p>Acesso de secretários e administrador.</p>
+      </div>
+      <form method="post" action="{{ url_for('autenticacao.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label for="identificador" class="form-label">E-mail institucional</label>
+          <input type="email" id="identificador" name="identificador" class="form-control"
+                 value="{{ identificador }}" placeholder="nome@pucpr.edu.br" maxlength="120"
+                 autocomplete="username" required>
+        </div>
+        <div class="mb-4">
+          <label for="senha" class="form-label">Senha</label>
+          <input type="password" id="senha" name="senha" class="form-control"
+                 maxlength="128" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Entrar</button>
+      </form>
+    </div>
+  </section>
 {% endblock %}

@@ -21,9 +21,11 @@ def create_app(config: Mapping[str, Any] | None = None) -> Flask:
 
     from app.routes.publicas import bp
     from app.routes.documentacao import bp as documentacao_bp
+    from app.cli import ocorrencias_cli
 
     app.register_blueprint(bp)
     app.register_blueprint(documentacao_bp)
+    app.cli.add_command(ocorrencias_cli)
 
     if not isinstance(app.config["CONTAS_HABILITADAS"], bool):
         raise RuntimeError("CONTAS_HABILITADAS deve ser um booleano.")

@@ -6,8 +6,8 @@ A classe `ListaDinamica[T]` está implementada em `app/structures/lista_dinamica
 com buffer fixo, expansão por duplicação, cópia e deslocamento manuais, busca
 e filtragem por predicados. Veja [o guia SCRUM-9](docs/scrum-9.md).
 O modelo e o núcleo SCRUM-8, a AVL e os módulos de contas, autorização e fotos
-da main foram preservados. A Lista real é testada com o núcleo e ocorrências;
-a sincronização de produção com JSON/AVL continua em SCRUM-13.
+da main foram preservados. A composição de produção conecta o JSON, a Lista,
+a AVL, o núcleo e a consulta temporal.
 A representação do buffer deve ser conferida com a rubrica acadêmica (P11).
 As seções datadas anteriores preservam o histórico das entregas.
 
@@ -27,16 +27,12 @@ As referências abaixo a núcleo/modelo ainda não implementados são histórica
 Base de um sistema web de achados e perdidos da PUCPR, desenvolvido por seis
 integrantes para uma disciplina de Engenharia de Software.
 
-**Etapa atual:** base Flask, contas, fronteira HTTP, núcleo SCRUM-8, Lista manual SCRUM-9 e AVL implementados; composição de produção ainda pendente.
+**Etapa atual:** base Flask, contas, fronteira HTTP, núcleo SCRUM-8, Lista manual SCRUM-9, AVL e composição de produção implementados.
 Por padrão, somente `GET /`, a documentação HTTP ativa (`/swagger` e `/openapi.json`) e arquivos estáticos estão disponíveis.
-Esta branch acrescenta o **módulo de contas de Luís**: contas em JSON,
-autenticação simples, formulários Jinja, gestão de secretários e CLI local,
-ativados explicitamente para avaliação das escolhas de P09/P10 definidas por Luís. Consulte o
-[guia de validação](docs/desenvolvimento-luis.md). Ocorrências, estruturas
-acadêmicas, JSON de ocorrências, consultas e correspondência continuam com seus responsáveis.
-As rotas, autorização, uploads e telas mínimas de ocorrências de Luís estão
-implementados; sua ativação depende da carga/armazenamento concretos dos colegas.
-Veja o [contrato de integração](docs/integracao-ocorrencias.md).
+Esta branch acrescenta o módulo de contas em JSON e a fronteira HTTP de
+ocorrências. A composição local de ocorrências usa o núcleo, a Lista Dinâmica,
+a AVL manual e o repositório JSON. Consulte o [guia de validação de contas](docs/desenvolvimento-luis.md)
+e o [contrato de integração](docs/integracao-ocorrencias.md).
 
 ## Executar no Windows
 
@@ -52,6 +48,10 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -c "from pathlib import Path; import secrets; p = Path('.env'); p.write_text(p.read_text(encoding='utf-8').replace('PUC_SECRET_KEY=', 'PUC_SECRET_KEY=' + secrets.token_hex(32), 1), encoding='utf-8')"
+$env:PUC_OCORRENCIAS_HABILITADAS = "false"
+.\.venv\Scripts\python.exe -m flask --app app ocorrencias inicializar
+Remove-Item Env:\PUC_OCORRENCIAS_HABILITADAS
+.\.venv\Scripts\python.exe -m flask --app app contas inicializar
 .\.venv\Scripts\python.exe -m flask --app app run --debug
 ```
 
@@ -60,11 +60,28 @@ Não sobrescreva um `.env` existente. A geração grava a chave no arquivo
 local ignorado pelo Git e não a exibe no terminal. Se `py` não estiver
 disponível, use o executável de Python instalado no seu computador para
 criar o ambiente. Um `.venv` já preparado dispensa a criação novamente.
+Os dois comandos `inicializar` também são de uso único. O de contas solicita
+nome, e-mail institucional e senha do administrador no terminal; execute-o
+com o servidor parado. Se já houver dados, não repita esses comandos.
 
 Abra `http://127.0.0.1:5000/`. O Flask CLI carrega `.env` com python-dotenv;
 uma chamada Python direta a `create_app` recebe configuração explícita ou
 variáveis de ambiente. A fábrica recusa iniciar sem `SECRET_KEY` e não cria
-JSON de contas/ocorrências, administrador ou diretórios de persistência nesta etapa.
+JSON de contas/ocorrências, administrador ou diretórios de persistência.
+
+Para habilitar as telas públicas de ocorrências, prepare uma vez o snapshot
+local antes de ligar `PUC_OCORRENCIAS_HABILITADAS=true` no `.env`:
+
+```powershell
+.\.venv\Scripts\python.exe -m flask --app app ocorrencias inicializar
+```
+
+O comando cria somente um JSON vazio se ele ainda não existir; se já existir,
+valida-o sem sobrescrever. Ative também `PUC_CONTAS_HABILITADAS=true` para
+as telas de login/equipe. O primeiro administrador é criado separadamente
+com `flask --app app contas inicializar`, que solicita os dados no terminal
+sem colocar a senha em argumentos ou no Git. Reinicie o servidor após alterar
+o `.env`.
 
 O depurador é para uso local. O frontend inicial usa Bootstrap 5.3.8 via
 CDN com integridade, e `/swagger` carrega a interface Swagger UI via CDN sobre `/openapi.json`; o carregamento desses ativos requer internet.

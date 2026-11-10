@@ -1,14 +1,89 @@
 {% extends "base.html" %}
 
+{% block body_class %}home-shell{% endblock %}
+
 {% block content %}
-<h1 class="mb-3">PUC Encontrou</h1>
-<p class="lead">Achados e perdidos da PUCPR.</p>
-{% if config.OCORRENCIAS_HABILITADAS %}
-<a class="btn btn-primary" href="{{ url_for('ocorrencias.listar') }}">Consultar ocorrências</a>
-<a class="btn btn-outline-primary" href="{{ url_for('ocorrencias.cadastrar') }}">Cadastrar ocorrência</a>
-{% else %}
-<p>A equipe está preparando o sistema. O cadastro e a consulta de ocorrências estarão disponíveis em uma próxima etapa.</p>
-{% endif %}
-{% if config.CONTAS_HABILITADAS %}<p class="mt-3"><a href="{{ url_for('autenticacao.login') }}">Acesso da secretaria e administração</a></p>{% endif %}
-<p class="mt-3"><a href="{{ url_for('documentacao.swagger') }}">Documentação HTTP (Swagger)</a></p>
+<div class="home-page">
+  <section class="home-hero" aria-labelledby="home-title">
+    <div class="home-hero-copy">
+      <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> Comunidade PUCPR</p>
+      <h1 id="home-title">Um encontro feliz pode começar com <span>um objeto perdido.</span></h1>
+      <p class="home-lead">Um espaço para aproximar quem perdeu algo de quem encontrou pelo caminho.</p>
+      <div class="home-actions">
+        {% if config.OCORRENCIAS_HABILITADAS %}
+          <a class="button-primary" href="{{ url_for('ocorrencias.listar') }}">
+            Consultar ocorrências <span aria-hidden="true">→</span>
+          </a>
+          <a class="button-secondary" href="{{ url_for('ocorrencias.cadastrar', tipo='PERDIDO') }}">Perdi um objeto</a>
+          <a class="button-secondary" href="{{ url_for('ocorrencias.cadastrar', tipo='ENCONTRADO') }}">Encontrei um objeto</a>
+        {% else %}
+          <span class="home-status"><span aria-hidden="true"></span> Estamos preparando o sistema</span>
+        {% endif %}
+      </div>
+      {% if not config.OCORRENCIAS_HABILITADAS %}
+        <p class="home-status-note">O cadastro e a consulta de ocorrências estarão disponíveis em uma próxima etapa.</p>
+      {% endif %}
+    </div>
+
+    <div class="home-illustration" aria-hidden="true">
+      <div class="illustration-sun"></div>
+      <div class="illustration-orbit orbit-one"></div>
+      <div class="illustration-orbit orbit-two"></div>
+      <div class="illustration-card card-lost">
+        <span class="illustration-icon icon-lost">?</span>
+        <span><strong>Perdeu algo?</strong><small>Vamos procurar juntos.</small></span>
+      </div>
+      <div class="illustration-card card-found">
+        <span class="illustration-icon icon-found">✓</span>
+        <span><strong>Encontrou?</strong><small>Você pode ajudar.</small></span>
+      </div>
+      <div class="illustration-center">
+        <span class="center-sparkle">✳</span>
+        <span>PUC<br><strong>Encontrou</strong></span>
+      </div>
+      <span class="illustration-caption">Pequenos encontros, grandes alívios.</span>
+    </div>
+  </section>
+
+  {% if config.OCORRENCIAS_HABILITADAS %}
+    <section class="home-how" id="como-funciona" aria-labelledby="how-title">
+      <div class="section-heading">
+        <p class="eyebrow">Simples assim</p>
+        <h2 id="how-title">A comunidade ajuda a encontrar.</h2>
+        <p>Compartilhe as informações essenciais para que todos possam consultar.</p>
+      </div>
+      <div class="home-steps">
+        <article class="home-step">
+          <span class="step-number">01</span>
+          <h3>Conte o que aconteceu</h3>
+          <p>Informe se perdeu ou encontrou um objeto.</p>
+        </article>
+        <article class="home-step">
+          <span class="step-number">02</span>
+          <h3>Inclua os detalhes</h3>
+          <p>Nome, categoria, data, local e uma foto ajudam a identificar o item.</p>
+        </article>
+        <article class="home-step">
+          <span class="step-number">03</span>
+          <h3>Consulte as ocorrências</h3>
+          <p>Use a busca para conferir os registros compartilhados pela comunidade.</p>
+        </article>
+      </div>
+    </section>
+  {% else %}
+    <section class="home-coming-soon" id="como-funciona" aria-labelledby="coming-title">
+      <span class="coming-icon" aria-hidden="true">✳</span>
+      <div>
+        <p class="eyebrow">Feito para a comunidade</p>
+        <h2 id="coming-title">Em breve, mais encontros no campus.</h2>
+        <p>Estamos preparando uma experiência simples para ajudar a comunidade PUCPR com achados e perdidos.</p>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="home-bottom" aria-label="Informações do sistema">
+    <span>Uma iniciativa para a comunidade PUCPR.</span>
+    <a href="{{ url_for('documentacao.swagger') }}">Conheça a documentação do sistema <span aria-hidden="true">↗</span></a>
+  </section>
+</div>
 {% endblock %}

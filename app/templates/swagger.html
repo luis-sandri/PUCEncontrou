@@ -5,15 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Swagger — PUC Encontrou</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
-<body>
-  <p><a href="{{ url_for('publicas.inicio') }}">PUC Encontrou</a> ·
-    <a href="{{ url_for('documentacao.especificacao') }}">Baixar OpenAPI JSON</a>
-    {% if config.CONTAS_HABILITADAS %} · <a href="{{ url_for('autenticacao.login') }}">Entrar</a>{% endif %}
-    {% if config.OCORRENCIAS_HABILITADAS %} · <a href="{{ url_for('ocorrencias.listar') }}">Ocorrências</a>{% endif %}</p>
-  <p>Formulários HTML com sessão e CSRF. Para operações protegidas, entre na aplicação
-    e copie o csrf_token de um formulário da mesma sessão. A interface Swagger requer internet.</p>
+<body class="swagger-page">
+  <header class="swagger-header">
+    <div class="swagger-header-inner">
+      <a class="site-brand" href="{{ url_for('publicas.inicio') }}">
+        <span class="site-brand-mark" aria-hidden="true">P</span><span>PUC <strong>Encontrou</strong></span>
+      </a>
+      <nav aria-label="Navegação da documentação">
+        <a href="{{ url_for('documentacao.especificacao') }}">Baixar OpenAPI JSON</a>
+        {% if config.CONTAS_HABILITADAS %}<a href="{{ url_for('autenticacao.login') }}">Entrar</a>{% endif %}
+        {% if config.OCORRENCIAS_HABILITADAS %}<a href="{{ url_for('ocorrencias.listar') }}">Ocorrências</a>{% endif %}
+      </nav>
+    </div>
+  </header>
+  <main class="swagger-content">
+    <div class="swagger-intro">
+      <p class="page-eyebrow">Referência para integração</p>
+      <h1>Documentação da API</h1>
+      <p>Explore os endpoints disponíveis. Para operações protegidas, entre na aplicação
+        e use o csrf_token de um formulário da mesma sessão. A interface Swagger requer internet.</p>
+    </div>
   <div id="swagger-ui"></div>
+  </main>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script>
     SwaggerUIBundle({

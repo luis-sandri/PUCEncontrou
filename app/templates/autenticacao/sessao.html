@@ -1,13 +1,22 @@
 {% extends "contas/layout.html" %}
 {% block title %}Minha sessão · PUC Encontrou{% endblock %}
 {% block conteudo_contas %}
-  <h1>Minha sessão</h1>
-  <p>Olá, {{ ator_atual.nome }}.</p>
-  <dl>
-    <dt>E-mail</dt><dd>{{ ator_atual.identificador }}</dd>
-    <dt>Perfil</dt><dd>{{ 'Administrador' if ator_atual.perfil == 'ADMINISTRADOR' else 'Secretário' }}</dd>
-  </dl>
+  <header class="page-heading">
+    <p class="page-eyebrow">Área da equipe</p>
+    <h1>Minha sessão</h1>
+    <p>Olá, {{ ator_atual.nome }}. Confira os dados da sua conta.</p>
+  </header>
+  <section class="profile-card">
+    <div class="profile-avatar" aria-hidden="true">{{ ator_atual.nome[:1]|upper }}</div>
+    <div class="profile-details">
+      <h2>{{ ator_atual.nome }}</h2>
+      <p>{{ ator_atual.identificador }}</p>
+      <span class="profile-role">{{ 'Administrador' if ator_atual.perfil == 'ADMINISTRADOR' else 'Secretário' }}</span>
+    </div>
+  </section>
   {% if ator_atual.perfil == 'ADMINISTRADOR' %}
-    <a class="btn btn-primary" href="{{ url_for('contas.listar_secretarios') }}">Gerenciar secretários</a>
+    <div class="page-actions">
+      <a class="btn btn-primary" href="{{ url_for('contas.listar_secretarios') }}">Gerenciar secretários</a>
+    </div>
   {% endif %}
 {% endblock %}
